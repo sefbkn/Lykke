@@ -3,17 +3,33 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Lykke.Service.BlockchainApi.Contract.Addresses;
+using Lykke.Service.Decred.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Lykke.Service.Decred.Api.Controllers
 {
-    [Route("api/[controller]")]
     public class AddressController : Controller
     {
-        [HttpGet("api/addresses/{address}/validity")]
-        public IActionResult IsValid(string address)
+        private readonly IAddressValidator _addressValidator;
+
+        public AddressController(IAddressValidator addressValidator)
         {
-            throw new NotImplementedException();
+            _addressValidator = addressValidator;
+        }
+        
+        /// <summary>
+        /// Determines if an address is valid on the current network.
+        /// </summary>
+        /// <param name="address">the address to validate</param>
+        /// <returns></returns>
+        [HttpGet("api/addresses/{address}/validity")]
+        public AddressValidationResponse IsValid(string address)
+        {
+            return new AddressValidationResponse
+            {
+                IsValid = _addressValidator.IsValid(address)
+            };
         }
     }
 }
