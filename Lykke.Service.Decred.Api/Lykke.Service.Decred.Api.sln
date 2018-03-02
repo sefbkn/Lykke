@@ -19,13 +19,15 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "4. Tests", "4. Tests", "{8F
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lykke.Service.Decred.Api", "Lykke.Service.Decred.Api\Lykke.Service.Decred.Api.csproj", "{BF2AE708-A601-4308-9E56-29669E862692}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lykke.Service.Decred.Api.Dcrdata", "Lykke.Service.Decred.Api.Dcrdata\Lykke.Service.Decred.Api.Dcrdata.csproj", "{3479A1F3-9B88-4A1B-BBB6-5E8D6CF10AEA}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Paymetheus.Decred", "Paymetheus.Decred\Paymetheus.Decred.csproj", "{01462997-ED35-4926-8A77-E772939B822E}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lykke.Service.Decred.Api.Services", "Lykke.Service.Decred.Api.Services\Lykke.Service.Decred.Api.Services.csproj", "{9AD27134-23EE-43DC-B412-21BA963E25CC}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Lykke.Service.Decred.Api.Services.Test", "Lykke.Service.Decred.Api.Services.Test\Lykke.Service.Decred.Api.Services.Test.csproj", "{0A4C779A-98F4-4860-B0C8-76E3159D8276}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Decred.BlockExplorer", "Decred.BlockExplorer\Decred.BlockExplorer.csproj", "{45260ACD-ED86-4BC1-8209-1B03180F5B17}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Decred.BlockExplorer.Tests", "Decred.BlockExplorer.Tests\Decred.BlockExplorer.Tests.csproj", "{A964716C-E725-4C9F-BC52-472BCEE14F60}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -37,10 +39,6 @@ Global
 		{BF2AE708-A601-4308-9E56-29669E862692}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BF2AE708-A601-4308-9E56-29669E862692}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{BF2AE708-A601-4308-9E56-29669E862692}.Release|Any CPU.Build.0 = Release|Any CPU
-		{3479A1F3-9B88-4A1B-BBB6-5E8D6CF10AEA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{3479A1F3-9B88-4A1B-BBB6-5E8D6CF10AEA}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{3479A1F3-9B88-4A1B-BBB6-5E8D6CF10AEA}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{3479A1F3-9B88-4A1B-BBB6-5E8D6CF10AEA}.Release|Any CPU.Build.0 = Release|Any CPU
 		{01462997-ED35-4926-8A77-E772939B822E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{01462997-ED35-4926-8A77-E772939B822E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{01462997-ED35-4926-8A77-E772939B822E}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -53,14 +51,23 @@ Global
 		{0A4C779A-98F4-4860-B0C8-76E3159D8276}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0A4C779A-98F4-4860-B0C8-76E3159D8276}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0A4C779A-98F4-4860-B0C8-76E3159D8276}.Release|Any CPU.Build.0 = Release|Any CPU
+		{45260ACD-ED86-4BC1-8209-1B03180F5B17}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45260ACD-ED86-4BC1-8209-1B03180F5B17}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45260ACD-ED86-4BC1-8209-1B03180F5B17}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45260ACD-ED86-4BC1-8209-1B03180F5B17}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A964716C-E725-4C9F-BC52-472BCEE14F60}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A964716C-E725-4C9F-BC52-472BCEE14F60}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A964716C-E725-4C9F-BC52-472BCEE14F60}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A964716C-E725-4C9F-BC52-472BCEE14F60}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
-		{3479A1F3-9B88-4A1B-BBB6-5E8D6CF10AEA} = {C9A2CFDE-EA32-4946-B679-7CE6EFA816B8}
 		{01462997-ED35-4926-8A77-E772939B822E} = {CC2067D7-1971-47BB-B491-5649EA3C18B2}
 		{9AD27134-23EE-43DC-B412-21BA963E25CC} = {CC2067D7-1971-47BB-B491-5649EA3C18B2}
 		{0A4C779A-98F4-4860-B0C8-76E3159D8276} = {8F9036B1-5106-4C69-B2D2-B78EE52687A0}
+		{45260ACD-ED86-4BC1-8209-1B03180F5B17} = {C9A2CFDE-EA32-4946-B679-7CE6EFA816B8}
+		{A964716C-E725-4C9F-BC52-472BCEE14F60} = {8F9036B1-5106-4C69-B2D2-B78EE52687A0}
 	EndGlobalSection
 EndGlobal
