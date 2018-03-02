@@ -1,9 +1,10 @@
 ﻿using System;
+using Paymetheus.Decred;
 using Paymetheus.Decred.Wallet;
 
 namespace Lykke.Service.Decred.Api.Services
 {
-    public interface IAddressValidator
+    public interface IAddressValidationService
     {
         /// <summary>
         /// Returns whether or not a given address is valid on the current network.
@@ -13,11 +14,11 @@ namespace Lykke.Service.Decred.Api.Services
         bool IsValid(string address);
     }
 
-    public class AddressValidator : IAddressValidator
+    public class AddressValidationService : IAddressValidationService
     {
         private readonly NetworkSettings _settings;
         
-        public AddressValidator(NetworkSettings settings)
+        public AddressValidationService(NetworkSettings settings)
         {
             if (settings == null) throw new ArgumentNullException(nameof(settings));
             if (settings.Name == null) throw new ArgumentNullException(nameof(settings.Name));
@@ -35,7 +36,7 @@ namespace Lykke.Service.Decred.Api.Services
         }
         
         public bool IsValid(string address)
-        {
+        {            
             return Address.TryDecode(address, out var addr) && addr.IntendedBlockChain.Name == _settings.Name;            
         }
     }

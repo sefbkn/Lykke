@@ -97,7 +97,7 @@ namespace Lykke.Service.Decred.Api.Controllers
             throw new NotImplementedException();
         }
         
-        [HttpGet("/api/transactions/history/to/{address}")]
+        [HttpGet("api/transactions/history/to/{address}")]
         public async Task<IActionResult> GetToAddressHistory(string address, int take, string afterHash = null)
         {
             throw new NotImplementedException();

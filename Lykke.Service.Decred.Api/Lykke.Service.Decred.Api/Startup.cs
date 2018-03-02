@@ -39,7 +39,7 @@ namespace Lykke.Service.Decred.Api
             var appSettings = Configuration.Get<AppSettings>();
             
             services.AddTransient(o => appSettings.ApiConfig.NetworkSettings);
-            services.AddTransient<IAddressValidator, AddressValidator>();
+            services.AddTransient<IAddressValidationService, AddressValidationService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
