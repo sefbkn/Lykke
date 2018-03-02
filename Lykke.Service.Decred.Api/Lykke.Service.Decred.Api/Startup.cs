@@ -1,13 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using Lykke.Service.Decred.Api.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace Lykke.Service.Decred.Api
 {
@@ -31,8 +26,8 @@ namespace Lykke.Service.Decred.Api
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            
             services.Configure<AppSettings>(Configuration);
-
             services.AddMvc()
                 .AddJsonOptions(options =>
                 {
@@ -41,6 +36,10 @@ namespace Lykke.Service.Decred.Api
                     options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
                 });
 
+            var appSettings = Configuration.Get<AppSettings>();
+            
+            services.AddTransient(o => appSettings.ApiConfig.NetworkSettings);
+            services.AddTransient<IAddressValidationService, AddressValidationService>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

@@ -13,4 +13,10 @@
   <ItemGroup>
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="2.0.0" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Lykke.Service.Decred.Api.Services\Lykke.Service.Decred.Api.Services.csproj">
+      <Project>{9AD27134-23EE-43DC-B412-21BA963E25CC}</Project>
+      <Name>Lykke.Service.Decred.Api.Services</Name>
+    </ProjectReference>
+  </ItemGroup>
 </Project>

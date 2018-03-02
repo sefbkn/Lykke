@@ -9,9 +9,11 @@ namespace Lykke.Service.Decred.Api.Dcrdata
     /// </summary>
     public class DcrdataClient
     {
+        private readonly Uri _apiEndpoint;
+
         public DcrdataClient(Uri apiEndpoint)
         {
-            throw new NotImplementedException();
+            _apiEndpoint = apiEndpoint;
         }
     }
 }

@@ -1,0 +1,13 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <AssemblyName>Lykke.Service.Decred.Api.Services</AssemblyName>
+    <RootNamespace>Lykke.Service.Decred.Api.Services</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Paymetheus.Decred\Paymetheus.Decred.csproj">
+      <Project>{01462997-ED35-4926-8A77-E772939B822E}</Project>
+      <Name>Paymetheus.Decred</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>
