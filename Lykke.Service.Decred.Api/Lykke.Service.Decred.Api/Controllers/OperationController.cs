@@ -79,7 +79,7 @@ namespace Lykke.Service.Decred.Api.Controllers
         {
             throw new NotImplementedException();
         }
-        
+                
         [HttpPost("api/transactions/history/from/{address}/observation")]
         public async Task<IActionResult> SubscribeAddressFrom(string address)
         {
@@ -88,18 +88,6 @@ namespace Lykke.Service.Decred.Api.Controllers
         
         [HttpPost("api/transactions/history/to/{address}/observation")]
         public async Task<IActionResult> SubscribeAddressTo(string address)
-        {
-            throw new NotImplementedException();
-        }
-
-        [HttpGet("api/transactions/history/from/{address}")]
-        public async Task<IActionResult> GetFromAddressHistory(string address, int take, string afterHash = null)
-        {
-            throw new NotImplementedException();
-        }
-        
-        [HttpGet("api/transactions/history/to/{address}")]
-        public async Task<PaginationResponse<HistoricalTransactionContract>> GetToAddressHistory(string address, int take, string afterHash = null)
         {
             throw new NotImplementedException();
         }
@@ -117,5 +105,18 @@ namespace Lykke.Service.Decred.Api.Controllers
             // Should stop observation of the transactions that transfer fund to the address
             throw new NotImplementedException();
         }
+        
+        [HttpGet("api/transactions/history/from/{address}")]
+        public async Task<IActionResult> GetFromAddressHistory(string address, int take, string afterHash = null)
+        {
+            throw new NotImplementedException();
+        }
+        
+        [HttpGet("api/transactions/history/to/{address}")]
+        public async Task<PaginationResponse<HistoricalTransactionContract>> GetToAddressHistory(string address, int take, string afterHash = null)
+        {
+            throw new NotImplementedException();
+        }
+
     }
 }

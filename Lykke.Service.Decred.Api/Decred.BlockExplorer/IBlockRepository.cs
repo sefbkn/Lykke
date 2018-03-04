@@ -8,6 +8,11 @@ namespace Decred.BlockExplorer
         /// Returns the highest known valid block's height.
         /// </summary>
         /// <returns>block height</returns>
-        Task<long> GetHighestBlock();
+        Task<Block> GetHighestBlock();
+    }
+
+    public class Block
+    {
+        public long Height { get; set; }
     }
 }

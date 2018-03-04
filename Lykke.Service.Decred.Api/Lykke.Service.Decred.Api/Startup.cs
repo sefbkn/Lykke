@@ -3,9 +3,13 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
 using AzureStorage;
+using AzureStorage.Tables;
+using Common.Log;
 using Decred.BlockExplorer;
 using Lykke.Service.Decred.Api.Middleware;
+using Lykke.Service.Decred.Api.Repository;
 using Lykke.Service.Decred.Api.Services;
+using Lykke.SettingsReader;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -15,6 +19,7 @@ namespace Lykke.Service.Decred.Api
 {
     public class Startup
     {
+        private readonly ILog _log;
         public IConfiguration Configuration { get; }
         public IHostingEnvironment Environment { get; }
 
@@ -42,9 +47,23 @@ namespace Lykke.Service.Decred.Api
                     options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
                 });
 
+            RegisterRepositories(services);
+
             var appSettings = Configuration.Get<AppSettings>();
             services.AddTransient(o => appSettings.ApiConfig.NetworkSettings);
             services.AddTransient<IAddressValidationService, AddressValidationService>();
+        }
+
+        private void RegisterRepositories(IServiceCollection services)
+        {
+            // Wire up azure connections
+            var settings = Configuration.LoadSettings<AppSettings>();
+            var connectionString = settings.ConnectionString(a => Configuration.GetConnectionString("azure"));
+            services.AddTransient
+               <IObservableOperationRepository<ObservableWalletEntity>, AzureObservableOperationRepository<ObservableWalletEntity>>(e => 
+                    new AzureObservableOperationRepository<ObservableWalletEntity>(
+                        AzureTableStorage<ObservableWalletEntity>.Create(connectionString, "ObservableWallet", _log)
+                    ));
             
             // Write up dcrdata postgres client to monitor transactions and balances.
             var dcrdataDbFactory = new Func<Task<IDbConnection>>(async () =>
@@ -55,9 +74,6 @@ namespace Lykke.Service.Decred.Api
             });
             services.AddTransient<IBlockRepository, DcrdataPgClient>(e => new DcrdataPgClient(dcrdataDbFactory));
             services.AddTransient<IAddressBalanceRepository, DcrdataPgClient>(e => new DcrdataPgClient(dcrdataDbFactory));
-            
-            // Set up observation repositories.
-            //services.AddTransient<INoSQLTableStorage<ObservableWalletEntity>, NoSqlT>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -71,10 +87,5 @@ namespace Lykke.Service.Decred.Api
             app.UseMiddleware(typeof(ApiErrorHandler));
             app.UseMvc();
         }
-    }
-
-    public class InitializeRepositories
-    {
-        
     }
 }

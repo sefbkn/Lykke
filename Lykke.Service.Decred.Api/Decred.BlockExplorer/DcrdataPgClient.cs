@@ -44,11 +44,11 @@ namespace Decred.BlockExplorer
             }
         }
 
-        public async Task<long> GetHighestBlock()
+        public async Task<Block> GetHighestBlock()
         {
             using (var db = await _connectionFactory())
             {
-                return await db.ExecuteScalarAsync<int>("select max(height) from blocks");
+                return await db.ExecuteScalarAsync<Block>("select max(height) as Height from blocks");
             }
         }
     }

@@ -7,24 +7,24 @@ using Decred.BlockExplorer;
 using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Balances;
 using Lykke.Service.Decred.Api.Common;
+using Lykke.Service.Decred.Api.Repository;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using Paymetheus.Decred.Wallet;
 
 namespace Lykke.Service.Decred.Api.Services
-{
+{    
     public class BalanceService
     {
-        private const int DuplicateRecordStatus = 409;
         private const int RecordNotFoundStatus = 404;
-        private const string Partition = "ByAddress";
+        private const int DuplicateRecordStatus = 409;
         
-        private readonly INoSQLTableStorage<ObservableWalletEntity> _observableWalletRepository;
+        private readonly IObservableOperationRepository<ObservableWalletEntity> _observableWalletRepository;
         private readonly IAddressBalanceRepository _balanceRepository;
         private readonly IBlockRepository _blockRepository;
 
         public BalanceService(
-            INoSQLTableStorage<ObservableWalletEntity> observableWalletRepository,
+            IObservableOperationRepository<ObservableWalletEntity> observableWalletRepository,
             IAddressBalanceRepository balanceRepository,
             IBlockRepository blockRepository)
         {
@@ -65,7 +65,7 @@ namespace Lykke.Service.Decred.Api.Services
         {
             try
             {
-                await _observableWalletRepository.DeleteAsync(Partition, address);
+                await _observableWalletRepository.DeleteAsync(new ObservableWalletEntity { Address = address });
             }
             catch (StorageException ex) when(ex.RequestInformation.HttpStatusCode == RecordNotFoundStatus)
             {
@@ -76,16 +76,16 @@ namespace Lykke.Service.Decred.Api.Services
         /// <summary>
         /// Retrieves balances for all subscribed addresses
         /// </summary>
-        /// <param name="take"></param>
-        /// <param name="continuation"></param>
+        /// <param name="take">Max number of balances to retrieve</param>
+        /// <param name="continuation">Determines position in the data set to start from</param>
         /// <returns></returns>
         public async Task<PaginationResponse<WalletBalanceContract>> GetBalancesAsync(int take, string continuation)
         {
             var result = await _observableWalletRepository.GetDataWithContinuationTokenAsync(take, continuation);
             
             var addresses = result.Entities.Select(e => e.Address).ToArray();
-            var blockHeight = await _blockRepository.GetHighestBlock();
-            var addressBalances = await _balanceRepository.GetAddressBalancesAsync(blockHeight, addresses);
+            var block = await _blockRepository.GetHighestBlock();
+            var addressBalances = await _balanceRepository.GetAddressBalancesAsync(block.Height, addresses);
             
             var balances = addressBalances.Select(b => new WalletBalanceContract {
                 AssetId = "DCR",

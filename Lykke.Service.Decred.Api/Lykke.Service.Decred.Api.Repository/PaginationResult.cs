@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-namespace Lykke.Service.Decred.Api.Services
+namespace Lykke.Service.Decred.Api.Repository
 {
     public class PaginationResult<T>
     {
