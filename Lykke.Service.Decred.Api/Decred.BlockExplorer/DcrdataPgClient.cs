@@ -27,12 +27,12 @@ namespace Decred.BlockExplorer
                 .ToDictionary(b => b.Address);
             
             using (var db = await _connectionFactory())
-            {                
+            {        
                 // Query the database for addresses
                 var results = await db.QueryAsync<AddressBalance>(
                    @"select address as Address, sum(value) as Balance from addresses " +
                     "join transactions on transactions.id = funding_tx_row_id " +
-                    "where block_height <= @blockHeight and address in @addresses and spending_tx_hash is null " +
+                    "where block_height <= @blockHeight and address = any(@addresses) and spending_tx_hash is null " +
                     "group by address ",
                     new { blockHeight = blockHeight, addresses = addresses });
 
@@ -48,7 +48,8 @@ namespace Decred.BlockExplorer
         {
             using (var db = await _connectionFactory())
             {
-                return await db.ExecuteScalarAsync<Block>("select max(height) as Height from blocks");
+                var result = await db.QueryAsync<Block>("select max(height) as Height from blocks");
+                return result.First();
             }
         }
     }

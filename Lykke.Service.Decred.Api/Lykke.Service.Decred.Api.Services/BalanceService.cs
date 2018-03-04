@@ -15,10 +15,7 @@ using Paymetheus.Decred.Wallet;
 namespace Lykke.Service.Decred.Api.Services
 {    
     public class BalanceService
-    {
-        private const int RecordNotFoundStatus = 404;
-        private const int DuplicateRecordStatus = 409;
-        
+    {        
         private readonly IObservableOperationRepository<ObservableWalletEntity> _observableWalletRepository;
         private readonly IAddressBalanceRepository _balanceRepository;
         private readonly IBlockRepository _blockRepository;
@@ -42,15 +39,7 @@ namespace Lykke.Service.Decred.Api.Services
         /// <returns></returns>
         public async Task SubscribeAsync(string address)
         {
-            try
-            {
-                var entity = new ObservableWalletEntity { Address = address };
-                await _observableWalletRepository.InsertAsync(entity);
-            }
-            catch (StorageException e) when(e.RequestInformation.HttpStatusCode == DuplicateRecordStatus)
-            {
-                throw new BusinessException("Already observing balance for address", e);
-            }
+            await _observableWalletRepository.InsertAsync(new ObservableWalletEntity { Address = address });
         }
 
         /// <summary>
@@ -63,14 +52,7 @@ namespace Lykke.Service.Decred.Api.Services
         /// <exception cref="BusinessException"></exception>
         public async Task UnsubscribeAsync(string address)
         {
-            try
-            {
-                await _observableWalletRepository.DeleteAsync(new ObservableWalletEntity { Address = address });
-            }
-            catch (StorageException ex) when(ex.RequestInformation.HttpStatusCode == RecordNotFoundStatus)
-            {
-                throw new BusinessException("Address is not being observed", ex);
-            }
+            await _observableWalletRepository.DeleteAsync(new ObservableWalletEntity { Address = address, ETag = "*"});
         }
 
         /// <summary>

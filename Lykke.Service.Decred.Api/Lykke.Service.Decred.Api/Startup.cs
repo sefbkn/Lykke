@@ -14,6 +14,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 
 namespace Lykke.Service.Decred.Api
 {
@@ -52,23 +53,27 @@ namespace Lykke.Service.Decred.Api
             var appSettings = Configuration.Get<AppSettings>();
             services.AddTransient(o => appSettings.ApiConfig.NetworkSettings);
             services.AddTransient<IAddressValidationService, AddressValidationService>();
+            services.AddTransient<BalanceService>();
         }
 
         private void RegisterRepositories(IServiceCollection services)
         {
+            var consoleLogger = new LogToConsole();
+
             // Wire up azure connections
             var settings = Configuration.LoadSettings<AppSettings>();
             var connectionString = settings.ConnectionString(a => Configuration.GetConnectionString("azure"));
             services.AddTransient
                <IObservableOperationRepository<ObservableWalletEntity>, AzureObservableOperationRepository<ObservableWalletEntity>>(e => 
                     new AzureObservableOperationRepository<ObservableWalletEntity>(
-                        AzureTableStorage<ObservableWalletEntity>.Create(connectionString, "ObservableWallet", _log)
+                        AzureTableStorage<ObservableWalletEntity>.Create(connectionString, "ObservableWallet", consoleLogger)
                     ));
             
             // Write up dcrdata postgres client to monitor transactions and balances.
             var dcrdataDbFactory = new Func<Task<IDbConnection>>(async () =>
             {
-                var sqlClient = new SqlConnection(Configuration.GetConnectionString("dcrdata"));
+                
+                var sqlClient = new NpgsqlConnection(Configuration.GetConnectionString("dcrdata"));
                 await sqlClient.OpenAsync();
                 return sqlClient;
             });

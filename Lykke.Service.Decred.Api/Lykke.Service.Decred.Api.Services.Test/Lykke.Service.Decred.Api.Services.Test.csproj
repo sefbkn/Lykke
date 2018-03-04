@@ -14,4 +14,9 @@
       <Name>Lykke.Service.Decred.Api.Services</Name>
     </ProjectReference>
   </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Lykke.Service.BlockchainApi.Contract, Version=11.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\..\..\..\..\.nuget\packages\lykke.service.blockchainapi.contract\11.0.0\lib\netstandard2.0\Lykke.Service.BlockchainApi.Contract.dll</HintPath>
+    </Reference>
+  </ItemGroup>
 </Project>

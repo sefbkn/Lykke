@@ -15,6 +15,7 @@ project.lock.json
 *.user
 *.userosscache
 *.sln.docstates
+*.DotSettings
 
 # Build results
 [Dd]ebug/
@@ -32,7 +33,8 @@ msbuild.err
 msbuild.wrn
 
 # Configurations
-appsettings.*.json
+*/appsettings.*.json
+
 
 # Visual Studio 2015
 .vs/

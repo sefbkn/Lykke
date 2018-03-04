@@ -30,7 +30,7 @@ namespace Lykke.Service.Decred.Api.Middleware
         private static Task HandleExceptionAsync(HttpContext context, Exception exception)
         {            
             var code = HttpStatusCode.InternalServerError;            
-            var result = JsonConvert.SerializeObject(new { error = exception.Message });
+            var result = JsonConvert.SerializeObject(new { error = exception.Message, stacktrace = exception.ToString() });
             context.Response.ContentType = "application/json";
             context.Response.StatusCode = (int) code;
             return context.Response.WriteAsync(result);
