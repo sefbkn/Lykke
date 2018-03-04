@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Microsoft.WindowsAzure.Storage, Version=8.1.4.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
+      <HintPath>..\..\..\..\..\.nuget\packages\windowsazure.storage\8.1.4\lib\netstandard1.3\Microsoft.WindowsAzure.Storage.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Lykke.AzureStorage" Version="7.0.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Lykke.Service.Decred.Api.Common\Lykke.Service.Decred.Api.Common.csproj">
+      <Project>{12ACAF18-56AA-44A6-8D65-1C13C7AE1DB1}</Project>
+      <Name>Lykke.Service.Decred.Api.Common</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

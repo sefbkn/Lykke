@@ -15,9 +15,9 @@ namespace Lykke.Service.Decred.Api.Controllers
         {
             var assetConfig = settings.Value?.ApiConfig?.Asset;
             if(assetConfig == null)
-                throw new ArgumentException("ApiConfig.Asset property must be set");
+                throw new ArgumentException("Asset property must be set.");
             if(assetConfig.Precision < 0)
-                throw new ArgumentException("Asset precision must be greater than zero");
+                throw new ArgumentException("Asset precision must be greater than zero.");
             if(string.IsNullOrWhiteSpace(assetConfig.AssetId))
                 throw new ArgumentException("Asset id cannot be null.");
             if (string.IsNullOrWhiteSpace(assetConfig.Name))

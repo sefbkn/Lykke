@@ -5,9 +5,25 @@
     <RootNamespace>Lykke.Service.Decred.Api.Services</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
+    <ProjectReference Include="..\Decred.BlockExplorer\Decred.BlockExplorer.csproj">
+      <Project>{45260ACD-ED86-4BC1-8209-1B03180F5B17}</Project>
+      <Name>Decred.BlockExplorer</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Lykke.Service.Decred.Api.Repository\Lykke.Service.Decred.Api.Repository.csproj">
+      <Project>{D133999A-B680-4473-B984-6091B14B7357}</Project>
+      <Name>Lykke.Service.Decred.Api.Repository</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Paymetheus.Decred\Paymetheus.Decred.csproj">
       <Project>{01462997-ED35-4926-8A77-E772939B822E}</Project>
       <Name>Paymetheus.Decred</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Reference Include="Lykke.Service.BlockchainApi.Contract, Version=11.0.0.0, Culture=neutral, PublicKeyToken=null">
+      <HintPath>..\..\..\..\..\.nuget\packages\lykke.service.blockchainapi.contract\11.0.0\lib\netstandard2.0\Lykke.Service.BlockchainApi.Contract.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.WindowsAzure.Storage, Version=8.1.4.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35">
+      <HintPath>..\..\..\..\..\.nuget\packages\windowsazure.storage\8.1.4\lib\netstandard1.3\Microsoft.WindowsAzure.Storage.dll</HintPath>
+    </Reference>
   </ItemGroup>
 </Project>

@@ -1,13 +1,26 @@
-﻿using Lykke.Service.Decred.Api.Services;
+﻿using System;
+using System.Data;
+using System.Data.SqlClient;
+using System.Threading.Tasks;
+using AzureStorage;
+using AzureStorage.Tables;
+using Common.Log;
+using Decred.BlockExplorer;
+using Lykke.Service.Decred.Api.Middleware;
+using Lykke.Service.Decred.Api.Repository;
+using Lykke.Service.Decred.Api.Services;
+using Lykke.SettingsReader;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 
 namespace Lykke.Service.Decred.Api
 {
     public class Startup
     {
+        private readonly ILog _log;
         public IConfiguration Configuration { get; }
         public IHostingEnvironment Environment { get; }
 
@@ -25,8 +38,7 @@ namespace Lykke.Service.Decred.Api
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
-        {
-            
+        {            
             services.Configure<AppSettings>(Configuration);
             services.AddMvc()
                 .AddJsonOptions(options =>
@@ -36,10 +48,37 @@ namespace Lykke.Service.Decred.Api
                     options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
                 });
 
+            RegisterRepositories(services);
+
             var appSettings = Configuration.Get<AppSettings>();
-            
             services.AddTransient(o => appSettings.ApiConfig.NetworkSettings);
             services.AddTransient<IAddressValidationService, AddressValidationService>();
+            services.AddTransient<BalanceService>();
+        }
+
+        private void RegisterRepositories(IServiceCollection services)
+        {
+            var consoleLogger = new LogToConsole();
+
+            // Wire up azure connections
+            var settings = Configuration.LoadSettings<AppSettings>();
+            var connectionString = settings.ConnectionString(a => Configuration.GetConnectionString("azure"));
+            services.AddTransient
+               <IObservableOperationRepository<ObservableWalletEntity>, AzureObservableOperationRepository<ObservableWalletEntity>>(e => 
+                    new AzureObservableOperationRepository<ObservableWalletEntity>(
+                        AzureTableStorage<ObservableWalletEntity>.Create(connectionString, "ObservableWallet", consoleLogger)
+                    ));
+            
+            // Write up dcrdata postgres client to monitor transactions and balances.
+            var dcrdataDbFactory = new Func<Task<IDbConnection>>(async () =>
+            {
+                
+                var sqlClient = new NpgsqlConnection(Configuration.GetConnectionString("dcrdata"));
+                await sqlClient.OpenAsync();
+                return sqlClient;
+            });
+            services.AddTransient<IBlockRepository, DcrdataPgClient>(e => new DcrdataPgClient(dcrdataDbFactory));
+            services.AddTransient<IAddressBalanceRepository, DcrdataPgClient>(e => new DcrdataPgClient(dcrdataDbFactory));
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -50,6 +89,7 @@ namespace Lykke.Service.Decred.Api
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseMiddleware(typeof(ApiErrorHandler));
             app.UseMvc();
         }
     }

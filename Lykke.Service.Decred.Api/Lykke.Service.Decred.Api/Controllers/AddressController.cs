@@ -12,7 +12,7 @@ namespace Lykke.Service.Decred.Api.Controllers
     public class AddressController : Controller
     {
         private readonly IAddressValidationService _addressValidator;
-
+        
         public AddressController(IAddressValidationService addressValidator)
         {
             _addressValidator = addressValidator;
