@@ -1,46 +1,76 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AzureStorage;
 using Decred.BlockExplorer;
 using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Balances;
+using Lykke.Service.Decred.Api.Common;
+using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 using Paymetheus.Decred.Wallet;
 
 namespace Lykke.Service.Decred.Api.Services
 {
-    public interface IObservableWalletEntity
-    {
-        string Address { get; set; }
-    }
-    
-    public class ObservableWalletEntity : TableEntity, IObservableWalletEntity
-    {
-        public string Address { get; set; }
-    }
-    
     public class BalanceService
     {
-        private readonly BlockExplorer _blockExplorer;
-        private readonly IObservableRepository<string, ObservableWalletEntity> _observableWalletRepository;
-        private List<string> _subscription = new List<string>();
+        private const int DuplicateRecordStatus = 409;
+        private const int RecordNotFoundStatus = 404;
+        private const string Partition = "ByAddress";
+        
+        private readonly INoSQLTableStorage<ObservableWalletEntity> _observableWalletRepository;
+        private readonly IAddressBalanceRepository _balanceRepository;
+        private readonly IBlockRepository _blockRepository;
 
         public BalanceService(
-            BlockExplorer blockExplorer,
-            IObservableRepository<string, ObservableWalletEntity> observableWalletRepository)
+            INoSQLTableStorage<ObservableWalletEntity> observableWalletRepository,
+            IAddressBalanceRepository balanceRepository,
+            IBlockRepository blockRepository)
         {
-            _blockExplorer = blockExplorer;
             _observableWalletRepository = observableWalletRepository;
+            _balanceRepository = balanceRepository;
+            _blockRepository = blockRepository;
         }
         
+        /// <summary>
+        /// Adds the given address to the observation repository.
+        /// 
+        /// If the address is already in the repository, a BusinessException is thrown.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
         public async Task SubscribeAsync(string address)
         {
-            _subscription.Add(address);
+            try
+            {
+                var entity = new ObservableWalletEntity { Address = address };
+                await _observableWalletRepository.InsertAsync(entity);
+            }
+            catch (StorageException e) when(e.RequestInformation.HttpStatusCode == DuplicateRecordStatus)
+            {
+                throw new BusinessException("Already observing balance for address", e);
+            }
         }
 
-        public async Task<bool> UnsubscribeAsync(string address)
+        /// <summary>
+        /// Removes given address from observation repository.
+        /// 
+        /// If the address is not in the repository, a BusinessException is thrown.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        /// <exception cref="BusinessException"></exception>
+        public async Task UnsubscribeAsync(string address)
         {
-            return _subscription.Remove(address);
+            try
+            {
+                await _observableWalletRepository.DeleteAsync(Partition, address);
+            }
+            catch (StorageException ex) when(ex.RequestInformation.HttpStatusCode == RecordNotFoundStatus)
+            {
+                throw new BusinessException("Address is not being observed", ex);
+            }
         }
 
         /// <summary>
@@ -51,28 +81,22 @@ namespace Lykke.Service.Decred.Api.Services
         /// <returns></returns>
         public async Task<PaginationResponse<WalletBalanceContract>> GetBalancesAsync(int take, string continuation)
         {
-            // TODO: Revisit this to be actually performant.
-            // TODO: Make sure the balance value is correctly encoded
+            var result = await _observableWalletRepository.GetDataWithContinuationTokenAsync(take, continuation);
             
-            var wallets = await _observableWalletRepository.List(take, continuation);
-            var balances = new List<WalletBalanceContract>();
-            foreach (var wallet in wallets.Items)
-            {
-                var balance = await _blockExplorer.GetAddressBalance(wallet.Address);
-                var balanceContract = new WalletBalanceContract
-                {
-                    Address = wallet.Address,
-                    AssetId = "DCR",
-                    Balance = balance.ToString(),
-                    Block = 0
-                };
-
-                balances.Add(balanceContract);
-            }
+            var addresses = result.Entities.Select(e => e.Address).ToArray();
+            var blockHeight = await _blockRepository.GetHighestBlock();
+            var addressBalances = await _balanceRepository.GetAddressBalancesAsync(blockHeight, addresses);
+            
+            var balances = addressBalances.Select(b => new WalletBalanceContract {
+                AssetId = "DCR",
+                Block = b.Block,
+                Address = b.Address,
+                Balance = b.Balance.ToString(),
+            }).ToArray();
             
             return new PaginationResponse<WalletBalanceContract> { 
                 Items = balances, 
-                Continuation = wallets.Continuation
+                Continuation = result.ContinuationToken
             };
         }
     }

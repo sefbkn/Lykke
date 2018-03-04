@@ -45,7 +45,7 @@ namespace Decred.BlockExplorer.Tests
             AddressTxRaw[] results;
             using (var httpClient = new HttpClient(messageHandler.Object))
             {
-                var client = new DcrdataClient(httpClient, baseUri);
+                var client = new DcrdataHttpClient(httpClient, baseUri);
                 results = await client.GetAddressTxRawAsync(address);
             }
 
@@ -67,19 +67,6 @@ namespace Decred.BlockExplorer.Tests
             Assert.Equal("00002f646372642f", vin.Coinbase);
             Assert.Equal(15.41510377m, vin.AmountIn);
             Assert.Equal(4294967295, vin.Sequence);
-        }
-
-        [Fact]
-        public async Task TestActualCall()
-        {
-            var address = "Dcur2mcGjmENx4DhNqDctW5wJCVyT3Qeqkx";
-            var baseUri = new Uri("https://dcrdata.org");
-            using (var httpClient = new HttpClient())
-            {
-                var client = new DcrdataClient(httpClient, baseUri);
-                var result = await client.GetAddressBalance(address);
-                Assert.Equal(0, result);
-            }
         }
     }
 }

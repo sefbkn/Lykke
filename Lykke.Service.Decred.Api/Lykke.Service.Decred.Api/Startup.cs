@@ -1,4 +1,11 @@
-﻿using Lykke.Service.Decred.Api.Services;
+﻿using System;
+using System.Data;
+using System.Data.SqlClient;
+using System.Threading.Tasks;
+using AzureStorage;
+using Decred.BlockExplorer;
+using Lykke.Service.Decred.Api.Middleware;
+using Lykke.Service.Decred.Api.Services;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -25,8 +32,7 @@ namespace Lykke.Service.Decred.Api
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
-        {
-            
+        {            
             services.Configure<AppSettings>(Configuration);
             services.AddMvc()
                 .AddJsonOptions(options =>
@@ -37,9 +43,21 @@ namespace Lykke.Service.Decred.Api
                 });
 
             var appSettings = Configuration.Get<AppSettings>();
-            
             services.AddTransient(o => appSettings.ApiConfig.NetworkSettings);
             services.AddTransient<IAddressValidationService, AddressValidationService>();
+            
+            // Write up dcrdata postgres client to monitor transactions and balances.
+            var dcrdataDbFactory = new Func<Task<IDbConnection>>(async () =>
+            {
+                var sqlClient = new SqlConnection(Configuration.GetConnectionString("dcrdata"));
+                await sqlClient.OpenAsync();
+                return sqlClient;
+            });
+            services.AddTransient<IBlockRepository, DcrdataPgClient>(e => new DcrdataPgClient(dcrdataDbFactory));
+            services.AddTransient<IAddressBalanceRepository, DcrdataPgClient>(e => new DcrdataPgClient(dcrdataDbFactory));
+            
+            // Set up observation repositories.
+            //services.AddTransient<INoSQLTableStorage<ObservableWalletEntity>, NoSqlT>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -50,7 +68,13 @@ namespace Lykke.Service.Decred.Api
                 app.UseDeveloperExceptionPage();
             }
 
+            app.UseMiddleware(typeof(ApiErrorHandler));
             app.UseMvc();
         }
+    }
+
+    public class InitializeRepositories
+    {
+        
     }
 }

@@ -9,6 +9,10 @@
       <Project>{45260ACD-ED86-4BC1-8209-1B03180F5B17}</Project>
       <Name>Decred.BlockExplorer</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Lykke.Service.Decred.Api.Repository\Lykke.Service.Decred.Api.Repository.csproj">
+      <Project>{D133999A-B680-4473-B984-6091B14B7357}</Project>
+      <Name>Lykke.Service.Decred.Api.Repository</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Paymetheus.Decred\Paymetheus.Decred.csproj">
       <Project>{01462997-ED35-4926-8A77-E772939B822E}</Project>
       <Name>Paymetheus.Decred</Name>
