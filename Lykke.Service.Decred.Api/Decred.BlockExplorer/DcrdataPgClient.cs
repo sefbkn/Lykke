@@ -32,7 +32,7 @@ namespace Decred.BlockExplorer
                 var results = await db.QueryAsync<AddressBalance>(
                    @"select address as Address, sum(value) as Balance from addresses " +
                     "join transactions on transactions.id = funding_tx_row_id " +
-                    "where block_height < @blockHeight and address in @addresses and spending_tx_hash is null " +
+                    "where block_height <= @blockHeight and address in @addresses and spending_tx_hash is null " +
                     "group by address ",
                     new { blockHeight = blockHeight, addresses = addresses });
 
