@@ -43,7 +43,7 @@ namespace Lykke.Service.Decred.Api.Services.Test
             var result = await subject.GetBalancesAsync(1, "test");
             
             Assert.Equal(1, result.Items.Count);
-            Assert.Equal("address", result.Items[0].Address);
+            Assert.Equal("address", (string) result.Items[0].Address);
         }
     }
 }

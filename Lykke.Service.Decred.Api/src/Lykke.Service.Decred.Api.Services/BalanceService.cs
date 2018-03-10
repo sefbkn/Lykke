@@ -72,7 +72,7 @@ namespace Lykke.Service.Decred.Api.Services
             var result = await _observableWalletRepository.GetDataWithContinuationTokenAsync(take, continuation);            
             var addresses = result.Entities.Select(e => e.Address).ToArray();
             var block = await _blockRepository.GetHighestBlock();
-            
+
             var addressBalances = await Task.WhenAll(
                 from address in addresses
                 select _balanceRepository.GetAddressBalanceAsync(block.Height, address)
