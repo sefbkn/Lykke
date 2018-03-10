@@ -1,212 +1,103 @@
 ﻿using System;
+using System.Data;
+using System.Data.SqlClient;
 using System.Threading.Tasks;
-using Autofac;
-using Autofac.Extensions.DependencyInjection;
+using AzureStorage;
 using AzureStorage.Tables;
 using Common.Log;
-using Lykke.Common.ApiLibrary.Middleware;
-using Lykke.Common.ApiLibrary.Swagger;
-using Lykke.Logs;
-using Lykke.Service.Decred_Api.Core.Services;
-using Lykke.Service.Decred_Api.Settings;
-using Lykke.Service.Decred_Api.Modules;
+using Decred.BlockExplorer;
+using Lykke.Service.Decred.Api.Middleware;
+using Lykke.Service.Decred.Api.Repository;
+using Lykke.Service.Decred.Api.Services;
 using Lykke.SettingsReader;
-using Lykke.SlackNotification.AzureQueue;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
 
-namespace Lykke.Service.Decred_Api
+namespace Lykke.Service.Decred.Api
 {
     public class Startup
     {
+        private readonly ILog _log;
+        public IConfiguration Configuration { get; }
         public IHostingEnvironment Environment { get; }
-        public IContainer ApplicationContainer { get; private set; }
-        public IConfigurationRoot Configuration { get; }
-        public ILog Log { get; private set; }
 
         public Startup(IHostingEnvironment env)
         {
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
+                .AddJsonFile("appsettings.json")
+                .AddJsonFile($"appsettings.{env.EnvironmentName}.json")
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
 
             Environment = env;
         }
 
-        public IServiceProvider ConfigureServices(IServiceCollection services)
-        {
-            try
-            {
-                services.AddMvc()
-                    .AddJsonOptions(options =>
-                    {
-                        options.SerializerSettings.ContractResolver =
-                            new Newtonsoft.Json.Serialization.DefaultContractResolver();
-                    });
-
-                services.AddSwaggerGen(options =>
+        // This method gets called by the runtime. Use this method to add services to the container.
+        public void ConfigureServices(IServiceCollection services)
+        {            
+            services.Configure<AppSettings>(Configuration);
+            services.AddMvc()
+                .AddJsonOptions(options =>
                 {
-                    options.DefaultLykkeConfiguration("v1", "Decred_Api API");
+                    options.SerializerSettings.ContractResolver =
+                        new Newtonsoft.Json.Serialization.DefaultContractResolver();
+                    options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
                 });
 
-                var builder = new ContainerBuilder();
-                var appSettings = Configuration.LoadSettings<AppSettings>();
+            RegisterRepositories(services);
 
-                Log = CreateLogWithSlack(services, appSettings);
-
-                builder.RegisterModule(new ServiceModule(appSettings.Nested(x => x.Decred_ApiService), Log));
-                builder.Populate(services);
-                ApplicationContainer = builder.Build();
-
-                return new AutofacServiceProvider(ApplicationContainer);
-            }
-            catch (Exception ex)
-            {
-                Log?.WriteFatalErrorAsync(nameof(Startup), nameof(ConfigureServices), "", ex).GetAwaiter().GetResult();
-                throw;
-            }
+            var appSettings = Configuration.Get<AppSettings>();
+            services.AddTransient(o => appSettings.ApiConfig.NetworkSettings);
+            services.AddTransient<IAddressValidationService, AddressValidationService>();
+            services.AddTransient<BalanceService>();
         }
 
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime)
-        {
-            try
-            {
-                if (env.IsDevelopment())
-                {
-                    app.UseDeveloperExceptionPage();
-                }
-
-                app.UseLykkeForwardedHeaders();
-                app.UseLykkeMiddleware("Decred_Api", ex => new { Message = "Technical problem" });
-
-                app.UseMvc();
-                app.UseSwagger(c =>
-                {
-                    c.PreSerializeFilters.Add((swagger, httpReq) => swagger.Host = httpReq.Host.Value);
-                });
-                app.UseSwaggerUI(x =>
-                {
-                    x.RoutePrefix = "swagger/ui";
-                    x.SwaggerEndpoint("/swagger/v1/swagger.json", "v1");
-                });
-                app.UseStaticFiles();
-
-                appLifetime.ApplicationStarted.Register(() => StartApplication().GetAwaiter().GetResult());
-                appLifetime.ApplicationStopping.Register(() => StopApplication().GetAwaiter().GetResult());
-                appLifetime.ApplicationStopped.Register(() => CleanUp().GetAwaiter().GetResult());
-            }
-            catch (Exception ex)
-            {
-                Log?.WriteFatalErrorAsync(nameof(Startup), nameof(Configure), "", ex).GetAwaiter().GetResult();
-                throw;
-            }
-        }
-
-        private async Task StartApplication()
-        {
-            try
-            {
-                // NOTE: Service not yet recieve and process requests here
-
-                await ApplicationContainer.Resolve<IStartupManager>().StartAsync();
-
-                await Log.WriteMonitorAsync("", $"Env: {Program.EnvInfo}", "Started");
-            }
-            catch (Exception ex)
-            {
-                await Log.WriteFatalErrorAsync(nameof(Startup), nameof(StartApplication), "", ex);
-                throw;
-            }
-        }
-
-        private async Task StopApplication()
-        {
-            try
-            {
-                // NOTE: Service still can recieve and process requests here, so take care about it if you add logic here.
-
-                await ApplicationContainer.Resolve<IShutdownManager>().StopAsync();
-            }
-            catch (Exception ex)
-            {
-                if (Log != null)
-                {
-                    await Log.WriteFatalErrorAsync(nameof(Startup), nameof(StopApplication), "", ex);
-                }
-                throw;
-            }
-        }
-
-        private async Task CleanUp()
-        {
-            try
-            {
-                // NOTE: Service can't recieve and process requests here, so you can destroy all resources
-
-                if (Log != null)
-                {
-                    await Log.WriteMonitorAsync("", $"Env: {Program.EnvInfo}", "Terminating");
-                }
-
-                ApplicationContainer.Dispose();
-            }
-            catch (Exception ex)
-            {
-                if (Log != null)
-                {
-                    await Log.WriteFatalErrorAsync(nameof(Startup), nameof(CleanUp), "", ex);
-                    (Log as IDisposable)?.Dispose();
-                }
-                throw;
-            }
-        }
-
-        private static ILog CreateLogWithSlack(IServiceCollection services, IReloadingManager<AppSettings> settings)
+        private void RegisterRepositories(IServiceCollection services)
         {
             var consoleLogger = new LogToConsole();
-            var aggregateLogger = new AggregateLogger();
 
-            aggregateLogger.AddLog(consoleLogger);
-
-            var dbLogConnectionStringManager = settings.Nested(x => x.Decred_ApiService.Db.LogsConnString);
-            var dbLogConnectionString = dbLogConnectionStringManager.CurrentValue;
-
-            if (string.IsNullOrEmpty(dbLogConnectionString))
+            // Wire up azure connections
+            var settings = Configuration.LoadSettings<AppSettings>();
+            var connectionString = settings.ConnectionString(a => Configuration.GetConnectionString("azure"));
+            services.AddTransient
+               <IObservableOperationRepository<ObservableWalletEntity>, AzureObservableOperationRepository<ObservableWalletEntity>>(e => 
+                    new AzureObservableOperationRepository<ObservableWalletEntity>(
+                        AzureTableStorage<ObservableWalletEntity>.Create(connectionString, "ObservableWallet", consoleLogger)
+                    ));
+            
+            // Write up dcrdata postgres client to monitor transactions and balances.
+            var dcrdataDbFactory = new Func<Task<IDbConnection>>(async () =>
             {
-                consoleLogger.WriteWarningAsync(nameof(Startup), nameof(CreateLogWithSlack), "Table loggger is not inited").Wait();
-                return aggregateLogger;
+                var sqlClient = new NpgsqlConnection(Configuration.GetConnectionString("dcrdata"));
+                await sqlClient.OpenAsync();
+                return sqlClient;
+            });
+
+            services.AddScoped<IDbConnection, NpgsqlConnection>((p) =>
+            {
+                var sqlClient = new NpgsqlConnection(Configuration.GetConnectionString("dcrdata"));
+                sqlClient.Open();
+                return sqlClient;
+            });
+            
+            services.AddTransient<IBlockRepository, DcrdataPgClient>();
+            services.AddTransient<IAddressRepository, DcrdataPgClient>();
+        }
+
+        // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        {
+            if (env.IsDevelopment())
+            {
+                app.UseDeveloperExceptionPage();
             }
 
-            if (dbLogConnectionString.StartsWith("${") && dbLogConnectionString.EndsWith("}"))
-                throw new InvalidOperationException($"LogsConnString {dbLogConnectionString} is not filled in settings");
-
-            var persistenceManager = new LykkeLogToAzureStoragePersistenceManager(
-                AzureTableStorage<LogEntity>.Create(dbLogConnectionStringManager, "Decred_ApiLog", consoleLogger),
-                consoleLogger);
-
-            // Creating slack notification service, which logs own azure queue processing messages to aggregate log
-            var slackService = services.UseSlackNotificationsSenderViaAzureQueue(new AzureQueueIntegration.AzureQueueSettings
-            {
-                ConnectionString = settings.CurrentValue.SlackNotifications.AzureQueue.ConnectionString,
-                QueueName = settings.CurrentValue.SlackNotifications.AzureQueue.QueueName
-            }, aggregateLogger);
-
-            var slackNotificationsManager = new LykkeLogToAzureSlackNotificationsManager(slackService, consoleLogger);
-
-            // Creating azure storage logger, which logs own messages to concole log
-            var azureStorageLogger = new LykkeLogToAzureStorage(
-                persistenceManager,
-                slackNotificationsManager,
-                consoleLogger);
-
-            azureStorageLogger.Start();
-
-            aggregateLogger.AddLog(azureStorageLogger);
-
-            return aggregateLogger;
+            app.UseMiddleware(typeof(ApiErrorHandler));
+            app.UseMvc();
         }
     }
 }
