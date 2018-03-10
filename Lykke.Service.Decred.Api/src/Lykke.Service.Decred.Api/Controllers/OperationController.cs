@@ -22,7 +22,12 @@ namespace Lykke.Service.Decred.Api.Controllers
         [HttpGet("api/capabilities")]
         public async Task<CapabilitiesResponse> GetCapabilities()
         {
-            throw new NotImplementedException();
+            return new CapabilitiesResponse
+            {
+                AreManyInputsSupported = true,
+                AreManyOutputsSupported = true,
+                IsTransactionsRebuildingSupported = true
+            };
         }
         
         [HttpPost("api/transactions/single")]
