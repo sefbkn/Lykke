@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Common;
@@ -148,13 +149,13 @@ namespace Lykke.Service.Decred.Api.Controllers
         }
         
         [HttpGet("api/transactions/history/from/{address}")]
-        public async Task<PaginationResponse<HistoricalTransactionContract>> GetTransactionsFromAddress(string address, int take, string afterHash = null)
+        public async Task<IEnumerable<HistoricalTransactionContract>> GetTransactionsFromAddress(string address, int take, string afterHash = null)
         {
             return await _transactionHistoryService.GetTransactionsFromAddress(address, take, afterHash);
         }
         
         [HttpGet("api/transactions/history/to/{address}")]
-        public async Task<PaginationResponse<HistoricalTransactionContract>> GetTransactionsToAddress(string address, int take, string afterHash = null)
+        public async Task<IEnumerable<HistoricalTransactionContract>> GetTransactionsToAddress(string address, int take, string afterHash = null)
         {
             return await _transactionHistoryService.GetTransactionsToAddress(address, take, afterHash);
         }

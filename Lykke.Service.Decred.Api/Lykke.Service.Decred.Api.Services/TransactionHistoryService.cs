@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Decred.BlockExplorer;
 using Lykke.Service.BlockchainApi.Contract;
@@ -34,14 +35,14 @@ namespace Lykke.Service.Decred.Api.Services
     
     public class TransactionHistoryService
     {
-        private readonly IBlockRepository _blockRepository;
+        private readonly ITransactionRepository _txRepo;
         private readonly IObservableOperationRepository<ObservableAddressActivityEntity> _operationRepo;
 
         public TransactionHistoryService(
-            IBlockRepository blockRepository,
+            ITransactionRepository txRepo,
             IObservableOperationRepository<ObservableAddressActivityEntity> operationRepo)
         {
-            _blockRepository = blockRepository;
+            _txRepo = txRepo;
             _operationRepo = operationRepo;
         }
         
@@ -93,14 +94,52 @@ namespace Lykke.Service.Decred.Api.Services
             await _operationRepo.DeleteAsync(entity);
         }
         
-        public async Task<PaginationResponse<HistoricalTransactionContract>> GetTransactionsFromAddress(string address, int take, string afterHash = null)
+        /// <summary>
+        /// Finds known transactions for a particular address occuring after the transaction with the given hash
+        /// 
+        /// If afterHash is null, the earliest known transaction for the given address is returned first.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="take"></param>
+        /// <param name="afterHash"></param>
+        /// <returns></returns>
+        public async Task<HistoricalTransactionContract[]> GetTransactionsFromAddress(string address, int take, string afterHash)
         {
-            throw new NotImplementedException();
+            var results = await _txRepo.GetTransactionsFromAddress(address, take, afterHash);
+            return results.Select(r => new HistoricalTransactionContract
+            {
+                Amount = r.Amount,
+                AssetId = "DCR",
+                FromAddress = r.FromAddress,
+                ToAddress = r.ToAddress,
+                Hash = r.Hash,
+                
+                // TODO: Fill these values in
+                
+                // If the transaction was broadcast using the Lykke decred service, log the operation id.
+                OperationId = Guid.Empty,
+                // Timestamp that the transaction occurred.
+                Timestamp = DateTime.MinValue
+            }).ToArray();
+            // Match up transactions that have an operation id...
         }
         
-        public async Task<PaginationResponse<HistoricalTransactionContract>> GetTransactionsToAddress(string address, int take, string afterHash = null)
+        public async Task<HistoricalTransactionContract[]> GetTransactionsToAddress(string address, int take, string afterHash = null)
         {
-            throw new NotImplementedException();
+            var results = await _txRepo.GetTransactionsFromAddress(address, take, afterHash);
+            return results.Select(r => new HistoricalTransactionContract
+            {
+                Amount = r.Amount,
+                AssetId = "DCR",
+                FromAddress = r.FromAddress,
+                ToAddress = r.ToAddress,
+                Hash = r.Hash,
+                
+                // If the transaction was broadcast using the Lykke decred service, log the operation id.
+                OperationId = Guid.Empty,
+                // Timestamp that the transaction occurred.
+                Timestamp = DateTime.MinValue
+            }).ToArray();
         }
     }
 }
