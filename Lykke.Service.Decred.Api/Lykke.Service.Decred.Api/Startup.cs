@@ -72,13 +72,20 @@ namespace Lykke.Service.Decred.Api
             // Write up dcrdata postgres client to monitor transactions and balances.
             var dcrdataDbFactory = new Func<Task<IDbConnection>>(async () =>
             {
-                
                 var sqlClient = new NpgsqlConnection(Configuration.GetConnectionString("dcrdata"));
                 await sqlClient.OpenAsync();
                 return sqlClient;
             });
-            services.AddTransient<IBlockRepository, DcrdataPgClient>(e => new DcrdataPgClient(dcrdataDbFactory));
-            services.AddTransient<IAddressBalanceRepository, DcrdataPgClient>(e => new DcrdataPgClient(dcrdataDbFactory));
+
+            services.AddScoped<IDbConnection, NpgsqlConnection>((p) =>
+            {
+                var sqlClient = new NpgsqlConnection(Configuration.GetConnectionString("dcrdata"));
+                sqlClient.Open();
+                return sqlClient;
+            });
+            
+            services.AddTransient<IBlockRepository, DcrdataPgClient>();
+            services.AddTransient<IAddressRepository, DcrdataPgClient>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

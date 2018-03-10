@@ -3,12 +3,21 @@ using System.Threading.Tasks;
 using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Common;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
+using Lykke.Service.Decred.Api.Common;
+using Lykke.Service.Decred.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Lykke.Service.Decred.Api.Controllers
 {
     public class OperationController : Controller
     {
+        private readonly TransactionHistoryService _transactionHistoryService;
+
+        public OperationController(TransactionHistoryService transactionHistoryService)
+        {
+            _transactionHistoryService = transactionHistoryService;
+        }
+        
         [HttpGet("api/capabilities")]
         public async Task<CapabilitiesResponse> GetCapabilities()
         {
@@ -83,40 +92,71 @@ namespace Lykke.Service.Decred.Api.Controllers
         [HttpPost("api/transactions/history/from/{address}/observation")]
         public async Task<IActionResult> SubscribeAddressFrom(string address)
         {
-            throw new NotImplementedException();
+            try
+            {
+                await _transactionHistoryService.SubscribeAddressFrom(address);
+                return Ok();
+            }
+            catch (BusinessException e) when(e.Reason == ErrorReason.DuplicateRecord)
+            {
+                return new StatusCodeResult(409);
+            }
         }
         
         [HttpPost("api/transactions/history/to/{address}/observation")]
         public async Task<IActionResult> SubscribeAddressTo(string address)
         {
-            throw new NotImplementedException();
+            try
+            {
+                await _transactionHistoryService.SubscribeAddressTo(address);
+                return Ok();
+            }
+            catch (BusinessException e) when(e.Reason == ErrorReason.DuplicateRecord)
+            {
+                return new StatusCodeResult(409);
+            }
         }
         
         [HttpDelete("api/transactions/history/from/{address}/observation")]
-        public async Task<PaginationResponse<HistoricalTransactionContract>> UnsubscribeFromAddressHistory(string address, int take, string afterHash = null)
+        public async Task<IActionResult> UnsubscribeFromAddressHistory(string address)
         {
-            // Should stop observation of the transactions that transfer fund from the address
-            throw new NotImplementedException();
+            try
+            {
+                await _transactionHistoryService.UnsubscribeAddressFromHistory(address);
+                return Ok();
+            }
+            catch (BusinessException e) when(e.Reason == ErrorReason.RecordNotFound)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
         
         [HttpDelete("api/transactions/history/to/{address}/observation")]
-        public async Task<IActionResult> UnsubscribeToAddressHistory(string address, int take, string afterHash = null)
+        public async Task<IActionResult> UnsubscribeToAddressHistory(string address)
         {
-            // Should stop observation of the transactions that transfer fund to the address
-            throw new NotImplementedException();
+            try
+            {
+                await _transactionHistoryService.UnsubscribeAddressToHistory(address);
+                return Ok();
+            }
+            catch (BusinessException e) when(e.Reason == ErrorReason.RecordNotFound)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
         }
         
         [HttpGet("api/transactions/history/from/{address}")]
-        public async Task<IActionResult> GetFromAddressHistory(string address, int take, string afterHash = null)
+        public async Task<PaginationResponse<HistoricalTransactionContract>> GetTransactionsFromAddress(string address, int take, string afterHash = null)
         {
-            throw new NotImplementedException();
+            return await _transactionHistoryService.GetTransactionsFromAddress(address, take, afterHash);
         }
         
         [HttpGet("api/transactions/history/to/{address}")]
-        public async Task<PaginationResponse<HistoricalTransactionContract>> GetToAddressHistory(string address, int take, string afterHash = null)
+        public async Task<PaginationResponse<HistoricalTransactionContract>> GetTransactionsToAddress(string address, int take, string afterHash = null)
         {
-            throw new NotImplementedException();
+            return await _transactionHistoryService.GetTransactionsToAddress(address, take, afterHash);
         }
-
     }
 }

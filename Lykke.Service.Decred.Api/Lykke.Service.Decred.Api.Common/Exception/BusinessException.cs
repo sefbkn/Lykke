@@ -15,6 +15,7 @@ namespace Lykke.Service.Decred.Api.Common
     public enum ErrorReason
     {
         DuplicateRecord = 0,
-        RecordNotFound = 1
+        RecordNotFound = 1,
+        InvalidAddress = 2,
     }
 }

@@ -10,47 +10,67 @@ namespace Decred.BlockExplorer
     /// <summary>
     /// Readonly client to read data from the dcrdata postgres database.
     /// </summary>
-    public class DcrdataPgClient : IAddressBalanceRepository, IBlockRepository
+    public class DcrdataPgClient : IAddressRepository, IBlockRepository
     {
-        private readonly Func<Task<IDbConnection>> _connectionFactory;
+        private readonly IDbConnection _dbConnection;
 
-        public DcrdataPgClient(Func<Task<IDbConnection>> connectionFactory)
+        public DcrdataPgClient(IDbConnection dbConnection)
         {
-            _connectionFactory = connectionFactory;
+            _dbConnection = dbConnection;
         }
 
-        public async Task<AddressBalance[]> GetAddressBalancesAsync(long blockHeight, string[] addresses)
+        /// <summary>
+        /// Discovers the balance of the given addresses at a particular block height
+        /// </summary>
+        /// <param name="blockHeight"></param>
+        /// <param name="addresses"></param>
+        /// <returns></returns>
+        public async Task<AddressBalance> GetAddressBalanceAsync(long blockHeight, string address)
         {
-            // Initialize all balances to zero
-            var balances = addresses
-                .Select(addr => new AddressBalance { Block = blockHeight, Address = addr, Balance = 0 })
-                .ToDictionary(b => b.Address);
+            var balance = new AddressBalance { Address = address, Block = blockHeight };
             
-            using (var db = await _connectionFactory())
-            {        
-                // Query the database for addresses
-                var results = await db.QueryAsync<AddressBalance>(
-                   @"select address as Address, sum(value) as Balance from addresses " +
-                    "join transactions on transactions.id = funding_tx_row_id " +
-                    "where block_height <= @blockHeight and address = any(@addresses) and spending_tx_hash is null " +
-                    "group by address ",
-                    new { blockHeight = blockHeight, addresses = addresses });
+            var query = 
+                @"select address as Address, sum(value) as Balance from addresses " +
+                "join transactions on transactions.id = funding_tx_row_id " +
+                "where block_height <= @blockHeight and address = @address and spending_tx_hash is null " +
+                "group by address";
+            
+            var results = (await _dbConnection.QueryAsync<AddressBalance>(query, 
+                new { blockHeight = blockHeight, address = address })).ToList();
 
-                // Set the balances
-                foreach (var result in results)
-                    balances[result.Address].Balance = result.Balance;
-                
-                return balances.Select(b => b.Value).ToArray();
+            if (results.Any())
+            {
+                balance.Balance = results.First().Balance;
             }
+
+            return balance;
+        }
+
+        /// <summary>
+        /// Finds all unspent transaction ids for a particular address.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <param name="take"></param>
+        /// <param name="afterHash"></param>
+        /// <returns></returns>
+        public async Task<IEnumerable<string>> GetUnspentTransactionIds(string address, int take, string afterHash)
+        {
+            var query = 
+                @"select funding_tx_hash
+                  from addresses addr
+                  join transactions tx on tx.tx_hash = addr.funding_tx_hash 
+                    and (@after_hash = null or tx.id > (select id from transactions where tx_hash = @after_hash))
+                  where address = '@address' and spending_tx_hash is null
+                  limit @take";
+            
+            return await _dbConnection.QueryAsync<string>(query, 
+                new { address = address, take = take, afterHash = @afterHash });
         }
 
         public async Task<Block> GetHighestBlock()
         {
-            using (var db = await _connectionFactory())
-            {
-                var result = await db.QueryAsync<Block>("select max(height) as Height from blocks");
-                return result.First();
-            }
+            var result = await _dbConnection.QueryAsync<Block>("select max(height) as Height from blocks");
+            return result.First();
         }
     }
 }

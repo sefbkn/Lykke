@@ -4,13 +4,14 @@ using System.Threading.Tasks;
 namespace Lykke.Service.Decred.Api.Repository
 {
     /// <summary>
-    /// Wraps all
+    /// Wraps all observable repositories.
     /// </summary>
     /// <typeparam name="T"></typeparam>
     public interface IObservableOperationRepository<T>
     {
-        Task InsertAsync(T value);       
-        Task DeleteAsync(T value);
+        Task<T> GetAsync(string partition, string key);
+        Task InsertAsync(T entity);       
+        Task DeleteAsync(T entity);
         Task<(IEnumerable<T> Entities, string ContinuationToken)> GetDataWithContinuationTokenAsync(int take, string continuation);
     }
 }

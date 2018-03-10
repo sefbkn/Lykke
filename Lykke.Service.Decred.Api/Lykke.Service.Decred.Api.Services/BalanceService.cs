@@ -17,17 +17,20 @@ namespace Lykke.Service.Decred.Api.Services
     public class BalanceService
     {        
         private readonly IObservableOperationRepository<ObservableWalletEntity> _observableWalletRepository;
-        private readonly IAddressBalanceRepository _balanceRepository;
+        private readonly IAddressRepository _balanceRepository;
         private readonly IBlockRepository _blockRepository;
+        private readonly IAddressValidationService _addressValidator;
 
         public BalanceService(
             IObservableOperationRepository<ObservableWalletEntity> observableWalletRepository,
-            IAddressBalanceRepository balanceRepository,
-            IBlockRepository blockRepository)
+            IAddressRepository balanceRepository,
+            IBlockRepository blockRepository,
+            IAddressValidationService addressValidator)
         {
             _observableWalletRepository = observableWalletRepository;
             _balanceRepository = balanceRepository;
             _blockRepository = blockRepository;
+            _addressValidator = addressValidator;
         }
         
         /// <summary>
@@ -39,20 +42,23 @@ namespace Lykke.Service.Decred.Api.Services
         /// <returns></returns>
         public async Task SubscribeAsync(string address)
         {
+            if (!_addressValidator.IsValid(address))
+                throw new BusinessException(ErrorReason.InvalidAddress);
+            
             await _observableWalletRepository.InsertAsync(new ObservableWalletEntity { Address = address });
         }
 
         /// <summary>
         /// Removes given address from observation repository.
-        /// 
         /// If the address is not in the repository, a BusinessException is thrown.
         /// </summary>
         /// <param name="address"></param>
         /// <returns></returns>
         /// <exception cref="BusinessException"></exception>
         public async Task UnsubscribeAsync(string address)
-        {
-            await _observableWalletRepository.DeleteAsync(new ObservableWalletEntity { Address = address, ETag = "*"});
+        {            
+            var entity = new ObservableWalletEntity(){ Address = address };
+            await _observableWalletRepository.DeleteAsync(entity);
         }
 
         /// <summary>
@@ -63,11 +69,14 @@ namespace Lykke.Service.Decred.Api.Services
         /// <returns></returns>
         public async Task<PaginationResponse<WalletBalanceContract>> GetBalancesAsync(int take, string continuation)
         {
-            var result = await _observableWalletRepository.GetDataWithContinuationTokenAsync(take, continuation);
-            
+            var result = await _observableWalletRepository.GetDataWithContinuationTokenAsync(take, continuation);            
             var addresses = result.Entities.Select(e => e.Address).ToArray();
             var block = await _blockRepository.GetHighestBlock();
-            var addressBalances = await _balanceRepository.GetAddressBalancesAsync(block.Height, addresses);
+            
+            var addressBalances = await Task.WhenAll(
+                from address in addresses
+                select _balanceRepository.GetAddressBalanceAsync(block.Height, address)
+            );
             
             var balances = addressBalances.Select(b => new WalletBalanceContract {
                 AssetId = "DCR",
