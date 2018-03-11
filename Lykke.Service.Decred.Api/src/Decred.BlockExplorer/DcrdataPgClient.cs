@@ -46,27 +46,6 @@ namespace Decred.BlockExplorer
             return balance;
         }
 
-        /// <summary>
-        /// Finds all unspent transaction ids for a particular address.
-        /// </summary>
-        /// <param name="address"></param>
-        /// <param name="take"></param>
-        /// <param name="afterHash"></param>
-        /// <returns></returns>
-        public async Task<IEnumerable<string>> GetUnspentTransactionIds(string address, int take, string afterHash)
-        {
-            var query = 
-                @"select funding_tx_hash
-                  from addresses addr
-                  join transactions tx on tx.tx_hash = addr.funding_tx_hash 
-                    and (@after_hash = null or tx.id > (select id from transactions where tx_hash = @after_hash))
-                  where address = '@address' and spending_tx_hash is null
-                  limit @take";
-            
-            return await _dbConnection.QueryAsync<string>(query, 
-                new { address = address, take = take, afterHash = @afterHash });
-        }
-
         public async Task<Block> GetHighestBlock()
         {
             var result = await _dbConnection.QueryAsync<Block>("select max(height) as Height from blocks");
