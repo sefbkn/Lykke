@@ -6,14 +6,15 @@ using Org.BouncyCastle.Crypto.EC;
 using Org.BouncyCastle.Crypto.Parameters;
 using Org.BouncyCastle.Crypto.Signers;
 using Org.BouncyCastle.Math;
+using ECPoint = Org.BouncyCastle.Math.EC.ECPoint;
 
 namespace Lykke.Service.Decred.SignService.Services
 {
     public class ECSecurityService
     {
-        protected IDigest DigestAlgorithm => new Sha256Digest();
-        protected X9ECParameters CurveParameters => CustomNamedCurves.GetByOid(SecObjectIdentifiers.SecP256k1);
-        protected ECDomainParameters DomainParameters => GetEllipticCurveDomainParameters(CurveParameters);
+        private IDigest DigestAlgorithm => new Sha256Digest();
+        private X9ECParameters CurveParameters => CustomNamedCurves.GetByOid(SecObjectIdentifiers.SecP256k1);
+        private ECDomainParameters DomainParameters => GetEllipticCurveDomainParameters(CurveParameters);
 
         public byte[] GetPublicKey(byte[] privateKey, bool isCompressed)
         {
@@ -21,10 +22,9 @@ namespace Lykke.Service.Decred.SignService.Services
             var publicKeyParameters = GetPublicKeyParameters(DomainParameters, privateKeyParameters);
             var q = publicKeyParameters.Q.Normalize();
             return DomainParameters.Curve
-                .CreatePoint(q.XCoord.ToBigInteger(), q.YCoord.ToBigInteger())
-                .GetEncoded(isCompressed);
+                .CreatePoint(q.XCoord.ToBigInteger(), q.YCoord.ToBigInteger()).GetEncoded(isCompressed);
         }
-
+        
         public ECSignature Sign(byte[] privateKey, byte[] data)
         {
             var privateKeyParameters = GetPrivateKeyParameters(privateKey);
