@@ -1,14 +1,16 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>netcoreapp2.0</TargetFramework>
-    <AssemblyName>Lykke.Service.Decred_SignService.Services</AssemblyName>
-    <RootNamespace>Lykke.Service.Decred_SignService.Services</RootNamespace>
+    <AssemblyName>Lykke.Service.Decred.SignService.Services</AssemblyName>
+    <RootNamespace>Lykke.Service.Decred.SignService.Services</RootNamespace>
     <Version>1.0.0</Version>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="BouncyCastle" Version="1.8.1" />
     <PackageReference Include="Lykke.Common" Version="4.4.2" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\Decred.Common\Decred.Common.csproj" />
     <ProjectReference Include="..\Lykke.Service.Decred.SignService.Core\Lykke.Service.Decred.SignService.Core.csproj" />
   </ItemGroup>
 </Project>
