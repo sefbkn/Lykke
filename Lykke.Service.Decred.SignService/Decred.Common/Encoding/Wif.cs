@@ -6,7 +6,7 @@ using NDecred.Common;
 using NDecred.Cryptography;
 
 namespace Decred.Common
-{   
+{
     /// <summary>
     ///     Provides methods for encoding / decoding a private key in the Wif format.
     /// </summary>
@@ -23,8 +23,7 @@ namespace Decred.Common
         public static string Serialize(Network network, ECDSAType type, bool isCompressed, byte[] privateKey)
         {
             if (privateKey.Length != KeyLength)
-                throw new ArgumentException(nameof(privateKey),
-                    $"Private key should be {KeyLength} bytes, not {privateKey.Length}");
+                throw new WifException($"Private key should be {KeyLength} bytes, not {privateKey.Length}");
 
             var prefix = BuildPrefix(network, type);
             return Base58Check.Encode(prefix, privateKey, isCompressed);
@@ -37,7 +36,7 @@ namespace Decred.Common
             var prefix = ExtractPrefix(extendedKeyCheck);
             var isValidWifForNetwork = network.AddressPrefix.All.Any(p => p.SequenceEqual(prefix.networkPrefix));
             if (!isValidWifForNetwork)
-                throw new InvalidDataException(
+                throw new WifException(
                     $"Wif is not valid for network {network.Name}.  Unrecognized prefix {Hex.FromByteArray(prefix.networkPrefix)}");
 
             return extendedKeyCheck.Skip(PrefixLength).Take(KeyLength).ToArray();

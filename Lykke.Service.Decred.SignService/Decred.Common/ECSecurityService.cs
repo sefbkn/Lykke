@@ -44,7 +44,6 @@ namespace Lykke.Service.Decred.SignService.Services
             
             return ecdsaSigner.VerifySignature(message, signature.R, signature.S);
         }
-
         
         private ECPublicKeyParameters GetPublicKeyParameters(ECDomainParameters domainParameters,
             ECPrivateKeyParameters privateKeyParameters)

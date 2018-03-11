@@ -35,8 +35,7 @@ namespace Lykke.Service.Decred_SignService.Services
 
         private string GetPublicAddress(byte[] publicKey)
         {
-            var network = Network.Testnet;
-            var prefix = network.AddressPrefix.PayToPublicKeyHash;
+            var prefix = _network.AddressPrefix.PayToPublicKeyHash;
             var pubKeyHash = HashUtil.Ripemd160(HashUtil.Blake256(publicKey));
             return new Base58Check().Encode(prefix, pubKeyHash, false);
         }
