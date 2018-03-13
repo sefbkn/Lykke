@@ -1,22 +1,31 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Org.BouncyCastle.Asn1;
+using Org.BouncyCastle.Asn1.Sec;
+using Org.BouncyCastle.Crypto.EC;
 using Org.BouncyCastle.Math;
 
 namespace Lykke.Service.Decred.SignService.Services
 {
     public class ECSignature
     {
+        private BigInteger CurveOrder { get; }
+        private BigInteger HalfOrder { get; }
         public ECSignature(BigInteger r, BigInteger s)
         {
             R = r;
             S = s;
+	        
+            CurveOrder = CustomNamedCurves.GetByOid(SecObjectIdentifiers.SecP256k1).N;
+            HalfOrder = new BigInteger(CurveOrder.ToByteArray()).ShiftRight(1);
+
         }
 
-        public ECSignature(byte[] signature)
+        public ECSignature(byte[] derSignature)
         {
-            using (var decoder = new Asn1InputStream(signature))
+            using (var decoder = new Asn1InputStream(derSignature))
             {
                 var seq = (DerSequence) decoder.ReadObject();
                 R = ((DerInteger) seq[0]).Value;
@@ -27,35 +36,38 @@ namespace Lykke.Service.Decred.SignService.Services
         public BigInteger R { get; }
         public BigInteger S { get; }
 
-        private byte[] Canonicalize(BigInteger value)
-        {
-            var bytes = new List<byte>(value.ToByteArray());
-            if (bytes.Count == 0)
-                return new byte[] { 0x00 };
-            if((bytes[0] & 0x80) != 0)
-                bytes.Insert(0, 0x00);
-            return bytes.ToArray();
-        }
-        
-        private void AssertCanonicalPadding(byte[] bytes)
-        {
-            if(bytes[0] == 0x80)
-                throw new Exception("Negative signature value encountered");
-            if(bytes.Length > 1 && bytes[0] == 0x00 && (bytes[1] & 0x80) != 0x80)
-                throw new Exception("Excessive padding in signature value");
-        }
-        
-        public byte[] Serialize()
+        public byte[] ToDer()
         {
             // Usually 70-72 bytes.
             using (var ms = new MemoryStream(72))
             {
                 var seq = new DerSequenceGenerator(ms);
                 seq.AddObject(new DerInteger(R));
-                seq.AddObject(new DerInteger(S));
+                seq.AddObject(new DerInteger(S.ToByteArray().Take(32).ToArray()));
                 seq.Close();
                 return ms.ToArray();
             }
         }
+	    
+
+        public ECSignature MakeCanonical()
+        {
+            if(!IsLowS)
+            {
+                return new ECSignature(this.R, CurveOrder.Subtract(this.S));
+            }
+            else
+                return this;
+        }
+
+        public bool IsLowS
+        {
+            get
+            {
+                return this.S.CompareTo(HalfOrder) <= 0;
+            }
+        }
+
     }
+
 }

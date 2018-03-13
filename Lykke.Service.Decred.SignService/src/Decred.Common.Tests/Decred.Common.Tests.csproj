@@ -14,5 +14,9 @@
       <Project>{84BAE8D2-E705-48E5-82C6-3A4141550C82}</Project>
       <Name>Decred.Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Lykke.Service.Decred.SignService.Services\Lykke.Service.Decred.SignService.Services.csproj">
+      <Project>{E19801D5-47D8-4C07-9A25-620352C0469E}</Project>
+      <Name>Lykke.Service.Decred.SignService.Services</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>

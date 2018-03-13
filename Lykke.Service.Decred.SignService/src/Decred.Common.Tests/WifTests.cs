@@ -4,13 +4,12 @@ using NDecred.Cryptography;
 using Xunit;
 
 namespace Decred.Common.Tests
-{
+{   
     public class WifTests
     {
         [Fact]
         public void Wif_GivenPrivateKeyBytes_CanBuildExpectedPublicAddress()
         {
-            // Don't use these addresses...
             var tests = new(Network network, string wif, string publicAddress, bool valid)[]
             {
                 (Network.Testnet, 
