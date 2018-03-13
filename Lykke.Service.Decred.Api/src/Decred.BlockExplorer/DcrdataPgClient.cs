@@ -67,10 +67,45 @@ namespace Decred.BlockExplorer
                 new { address = address, take = take, afterHash = @afterHash });
         }
 
+        /// <summary>
+        /// Returns utxo information for a given address.
+        /// 
+        /// All fields should be enough to support creating p2pkh unlocking constructs
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IEnumerable<UnspentTransactionOutput>> GetUnspentTransactionOutputs(string address)
+        {
+            var query = @"select
+                    vouts.tx_hash as TxHash,
+                    vouts.tx_tree TxTree,
+                    vouts.tx_index TxIndex,
+                    vouts.version as TxVersion,
+                    vouts.pkscript as PkScript,
+                    vouts.value as OutputValue,
+                    addr.funding_tx_vout_index TxOutIndex
+                from addresses addr
+                join vouts on addr.vout_row_id = vouts.id
+                where address = @address
+                    and addr.spending_tx_hash is null
+                    and vouts.script_type = 'pubkeyhash'";
+            
+            return await _dbConnection.QueryAsync<UnspentTransactionOutput>(query,
+                new{ address = address });
+        }
+
         public async Task<Block> GetHighestBlock()
         {
             var result = await _dbConnection.QueryAsync<Block>("select max(height) as Height from blocks");
             return result.First();
         }
+    }
+
+    public class UnspentTransactionOutput
+    {
+        public string TxHash { get; set; }
+        public byte TxTree { get; set; }
+        public int TxIndex { get; set; }
+        public ushort TxVersion { get; set; }
+        public byte[] PkScript { get; set; }
     }
 }
