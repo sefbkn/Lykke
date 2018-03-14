@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection.Emit;
 using Decred.Common;
@@ -83,17 +84,13 @@ namespace Lykke.Service.Decred.SignService.Services
 
         private static byte[] GetSignatureScript(byte[] signature, byte[] publicKey)
         {
-            if(signature.Length > 75)
-                throw new TransactionSigningException("Signature too long");
-            if(publicKey.Length > 75)
-                throw new TransactionSigningException("Public key too long");
-            
-            var unlockingScript = new List<byte>();            
-            unlockingScript.Add((byte) signature.Length);
-            unlockingScript.AddRange(signature);
-            unlockingScript.Add((byte) publicKey.Length);
-            unlockingScript.AddRange(publicKey);
-            return unlockingScript.ToArray();
+            using (var ms = new MemoryStream(signature.Length + publicKey.Length + 2))
+            using (var bw = new BinaryWriter(ms))
+            {
+                bw.WriteVariableLengthBytes(signature);
+                bw.WriteVariableLengthBytes(publicKey);
+                return ms.ToArray();
+            }
         }
 
         private static byte[] GetPublicKeyHash(byte[] rawPkScript)
