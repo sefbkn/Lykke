@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AzureStorage;
+using Common;
 using Decred.BlockExplorer;
 using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Balances;
@@ -71,22 +72,20 @@ namespace Lykke.Service.Decred.Api.Services
         {
             var result = await _observableWalletRepository.GetDataWithContinuationTokenAsync(take, continuation);            
             var addresses = result.Entities.Select(e => e.Address).ToArray();
-            var block = await _blockRepository.GetHighestBlock();
-
-            var addressBalances = await Task.WhenAll(
-                from address in addresses
-                select _balanceRepository.GetAddressBalanceAsync(block.Height, address)
-            );
             
-            var balances = addressBalances.Select(b => new WalletBalanceContract {
-                AssetId = "DCR",
-                Block = b.Block,
-                Address = b.Address,
-                Balance = b.Balance.ToString(),
-            }).ToArray();
+            var block = await _blockRepository.GetHighestBlock();
+            var balances = 
+               (from balance in await _balanceRepository.GetAddressBalancesAsync(block.Height, addresses)
+                select new WalletBalanceContract
+                {
+                    AssetId = "DCR",
+                    Block = balance.Block,
+                    Address = balance.Address,
+                    Balance = balance.Balance.ToString(),
+                }).ToArray();
             
             return new PaginationResponse<WalletBalanceContract> { 
-                Items = balances, 
+                Items = balances.ToArray(), 
                 Continuation = result.ContinuationToken
             };
         }
