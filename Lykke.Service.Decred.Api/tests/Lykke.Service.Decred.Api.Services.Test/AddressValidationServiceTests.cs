@@ -1,4 +1,4 @@
-using System;
+using NDecred.Common;
 using Xunit;
 
 namespace Lykke.Service.Decred.Api.Services.Test
@@ -21,7 +21,7 @@ namespace Lykke.Service.Decred.Api.Services.Test
         {
             foreach (var test in _tests)
             {
-                var network = new NetworkSettings { Name = test.network };
+                var network = Network.ByName(test.network);
                 var service = new AddressValidationService(network);
                 var result = service.IsValid(test.address);
                 Assert.Equal(test.isValid, result);

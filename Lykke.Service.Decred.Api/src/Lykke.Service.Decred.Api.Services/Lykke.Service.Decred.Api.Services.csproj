@@ -5,12 +5,12 @@
     <RootNamespace>Lykke.Service.Decred.Api.Services</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Decred.BlockExplorer\Decred.BlockExplorer.csproj" />
-    <ProjectReference Include="..\Lykke.Service.Decred.Api.Repository\Lykke.Service.Decred.Api.Repository.csproj" />
-    <ProjectReference Include="..\Paymetheus.Decred\Paymetheus.Decred.csproj">
-      <Project>{01462997-ED35-4926-8A77-E772939B822E}</Project>
-      <Name>Paymetheus.Decred</Name>
+    <ProjectReference Include="..\..\..\lib\Decred.BlockExplorer\Decred.BlockExplorer.csproj" />
+    <ProjectReference Include="..\..\..\lib\NDecred.Common\Decred.Common.csproj">
+      <Project>{671A26F8-42D9-41C2-BE54-415EAF5BA70D}</Project>
+      <Name>Decred.Common</Name>
     </ProjectReference>
+    <ProjectReference Include="..\Lykke.Service.Decred.Api.Repository\Lykke.Service.Decred.Api.Repository.csproj" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="Lykke.Service.BlockchainApi.Contract, Version=11.0.0.0, Culture=neutral, PublicKeyToken=null">

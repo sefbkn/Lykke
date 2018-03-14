@@ -1,7 +1,4 @@
-﻿using System.Collections;
-using System.Collections.Generic;
-using System.Runtime.Serialization;
-using Lykke.Service.Decred.Api.Services;
+﻿using Lykke.Service.Decred.Api.Services;
 using Newtonsoft.Json;
 
 namespace Lykke.Service.Decred.Api
@@ -14,7 +11,7 @@ namespace Lykke.Service.Decred.Api
     public class ApiConfig
     {
         public AssetConfig Asset { get; set; }
-        public NetworkSettings NetworkSettings { get; set; }
+        public string Network { get; set; }
         public NetworkServices NetworkServices { get; set; }
     }
 

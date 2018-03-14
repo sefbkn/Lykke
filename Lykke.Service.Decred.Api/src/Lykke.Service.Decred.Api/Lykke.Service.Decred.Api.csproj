@@ -11,6 +11,10 @@
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="2.0.0" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\..\..\lib\Decred.BlockExplorer\Decred.BlockExplorer.csproj">
+      <Project>{621E3109-186B-417C-9002-2E1DF0ED124A}</Project>
+      <Name>Decred.BlockExplorer</Name>
+    </ProjectReference>
     <ProjectReference Include="..\Lykke.Service.Decred.Api.Services\Lykke.Service.Decred.Api.Services.csproj">
       <Project>{9AD27134-23EE-43DC-B412-21BA963E25CC}</Project>
       <Name>Lykke.Service.Decred.Api.Services</Name>

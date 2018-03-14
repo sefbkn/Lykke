@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Decred.BlockExplorer;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Moq;
+using NDecred.Common;
 using Paymetheus.Decred;
 using Xunit;
 
@@ -31,7 +32,7 @@ namespace Lykke.Service.Decred.Api.Services.Test
             {
                 BlockHeight = 0,
                 BlockIndex = 0,
-                Hash = HexUtil.BytesToHexString(new byte[32]),
+                Hash = HexUtil.FromByteArray(new byte[32]),
                 OutputIndex = 1,
                 OutputValue = 2 * 100000000,
                 OutputVersion = 0,
@@ -56,7 +57,7 @@ namespace Lykke.Service.Decred.Api.Services.Test
             };
 
             var result = await subject.BuildSingleTransactionAsync(request, 1);
-            var transaction = Transaction.Deserialize(HexUtil.BytesFromHexString(result.TransactionContext));
+            var transaction = Transaction.Deserialize(HexUtil.ToByteArray(result.TransactionContext));
             
             Assert.Equal(2, transaction.Outputs.Length);
             

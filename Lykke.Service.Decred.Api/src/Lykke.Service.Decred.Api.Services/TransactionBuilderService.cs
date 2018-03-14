@@ -1,10 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Decred.BlockExplorer;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Lykke.Service.Decred.Api.Common;
+using NDecred.Common;
 using Paymetheus.Decred;
 using Paymetheus.Decred.Wallet;
 
@@ -40,7 +40,7 @@ namespace Lykke.Service.Decred.Api.Services
             // and map as inputs to new transaction
             var allInputs = 
                (from output in await _txRepo.GetUnspentTxOutputs(request.FromAddress)
-                let txHash = new Blake256Hash(HexUtil.BytesFromHexString(output.Hash).Reverse().ToArray())
+                let txHash = new Blake256Hash(HexUtil.ToByteArray(output.Hash).Reverse().ToArray())
                 let outpoint = new Transaction.OutPoint(txHash, output.OutputIndex, output.Tree)
                 select new Transaction.Input(
                     outpoint,
@@ -93,33 +93,8 @@ namespace Lykke.Service.Decred.Api.Services
             
             return new BuildTransactionResponse
             {
-                TransactionContext = HexUtil.BytesToHexString(newTx.Serialize())
+                TransactionContext = HexUtil.FromByteArray(newTx.Serialize())
             };
         }
     }
-    
-    public static class HexUtil
-    {
-        /// <summary>
-        ///     Converts a string of hexadecimal characters to a byte[]
-        /// </summary>
-        /// <param name="hex"></param>
-        /// <returns></returns>
-        public static byte[] BytesFromHexString(string hex)
-        {
-            return Enumerable.Range(0, hex.Length).Where(x => x % 2 == 0)
-                .Select(x => Convert.ToByte(hex.Substring(x, 2), 16)).ToArray();
-        }
-
-        /// <summary>
-        ///     Converts a byte[] to a string of lowercase hexadecimal characters
-        /// </summary>
-        /// <param name="bytes"></param>
-        /// <returns></returns>
-        public static string BytesToHexString(byte[] bytes)
-        {
-            return BitConverter.ToString(bytes).Replace("-", string.Empty).ToLower();
-        }
-    }
-
 }

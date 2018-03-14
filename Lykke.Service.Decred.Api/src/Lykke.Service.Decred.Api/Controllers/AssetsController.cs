@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Threading.Tasks;
 using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Assets;
 using Microsoft.AspNetCore.Mvc;

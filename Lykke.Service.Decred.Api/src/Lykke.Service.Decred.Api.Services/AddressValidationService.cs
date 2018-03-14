@@ -1,5 +1,5 @@
 ﻿using System;
-using Paymetheus.Decred;
+using NDecred.Common;
 using Paymetheus.Decred.Wallet;
 
 namespace Lykke.Service.Decred.Api.Services
@@ -16,19 +16,19 @@ namespace Lykke.Service.Decred.Api.Services
 
     public class AddressValidationService : IAddressValidationService
     {
-        private readonly NetworkSettings _settings;
+        private readonly Network _network;
         
-        public AddressValidationService(NetworkSettings settings)
+        public AddressValidationService(Network network)
         {
-            if (settings == null) throw new ArgumentNullException(nameof(settings));
-            if (settings.Name == null) throw new ArgumentNullException(nameof(settings.Name));
+            if (network == null) throw new ArgumentNullException(nameof(network));
+            if (network.Name == null) throw new ArgumentNullException(nameof(network.Name));
             
-            switch (settings.Name)
+            switch (network.Name)
             {
                 case "mainnet":
                 case "testnet":
                 case "simnet":
-                    _settings = settings;
+                    _network = network;
                     break;
                 default:
                     throw new ArgumentException("Invalid network");
@@ -37,7 +37,7 @@ namespace Lykke.Service.Decred.Api.Services
         
         public bool IsValid(string address)
         {            
-            return Address.TryDecode(address, out var addr) && addr.IntendedBlockChain.Name == _settings.Name;            
+            return Address.TryDecode(address, out var addr) && addr.IntendedBlockChain.Name == _network.Name;            
         }
     }
 }

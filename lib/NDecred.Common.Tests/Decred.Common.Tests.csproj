@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netcoreapp2.0</TargetFramework>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
+    <PackageReference Include="xunit" Version="2.3.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
+    <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Decred.Common\Decred.Common.csproj">
+      <Project>{84BAE8D2-E705-48E5-82C6-3A4141550C82}</Project>
+      <Name>Decred.Common</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Lykke.Service.Decred.SignService.Services\Lykke.Service.Decred.SignService.Services.csproj">
+      <Project>{E19801D5-47D8-4C07-9A25-620352C0469E}</Project>
+      <Name>Lykke.Service.Decred.SignService.Services</Name>
+    </ProjectReference>
+  </ItemGroup>
+</Project>

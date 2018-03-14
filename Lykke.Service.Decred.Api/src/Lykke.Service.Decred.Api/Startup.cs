@@ -1,9 +1,7 @@
 ﻿using System;
 using System.Data;
-using System.Data.SqlClient;
 using System.Net.Http;
 using System.Threading.Tasks;
-using AzureStorage;
 using AzureStorage.Tables;
 using Common.Log;
 using Decred.BlockExplorer;
@@ -15,6 +13,7 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using NDecred.Common;
 using Newtonsoft.Json.Serialization;
 using Npgsql;
 
@@ -52,8 +51,10 @@ namespace Lykke.Service.Decred.Api
             RegisterRepositories(services);
 
             var appSettings = Configuration.Get<AppSettings>();
-            services.AddTransient(o => appSettings.ApiConfig.NetworkSettings);
 
+            // Register network dependency
+            services.AddTransient(p => Network.ByName(appSettings.ApiConfig.Network));
+            
             services.AddTransient<HttpClient>();
             services.AddTransient<TransactionHistoryService>();
             services.AddTransient<TransactionBuilderService>();
@@ -97,9 +98,9 @@ namespace Lykke.Service.Decred.Api
                 return sqlClient;
             });
             
-            services.AddTransient<IBlockRepository, DcrdataPgClient>();
+            services.AddTransient<IBlockRepository, BlockRepository>();
+            services.AddTransient<IAddressRepository, AddressRepository>();
             services.AddTransient<ITransactionRepository, TransactionRepository>();
-            services.AddTransient<IAddressRepository, DcrdataPgClient>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

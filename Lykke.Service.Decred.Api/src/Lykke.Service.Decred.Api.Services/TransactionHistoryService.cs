@@ -2,7 +2,6 @@
 using System.Linq;
 using System.Threading.Tasks;
 using Decred.BlockExplorer;
-using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Lykke.Service.Decred.Api.Repository;
 using Microsoft.WindowsAzure.Storage.Table;

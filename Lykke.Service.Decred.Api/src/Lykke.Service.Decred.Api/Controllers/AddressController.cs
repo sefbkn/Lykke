@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Threading.Tasks;
-using Lykke.Service.BlockchainApi.Contract.Addresses;
+﻿using Lykke.Service.BlockchainApi.Contract.Addresses;
 using Lykke.Service.Decred.Api.Services;
 using Microsoft.AspNetCore.Mvc;
 

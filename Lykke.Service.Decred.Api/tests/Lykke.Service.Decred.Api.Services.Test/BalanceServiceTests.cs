@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 using Decred.BlockExplorer;
 using Lykke.Service.Decred.Api.Repository;
 using Moq;
@@ -32,7 +30,7 @@ namespace Lykke.Service.Decred.Api.Services.Test
                 _mockBlockRepo.Object,
                 _mockAddressValidator.Object);
             
-            _mockOperationRepo.Expect(x => x.GetDataWithContinuationTokenAsync(1, "test"))
+            _mockOperationRepo.Setup(x => x.GetDataWithContinuationTokenAsync(1, "test"))
                 .ReturnsAsync((new[]
                 {
                     new ObservableWalletEntity{ Address = "address" },

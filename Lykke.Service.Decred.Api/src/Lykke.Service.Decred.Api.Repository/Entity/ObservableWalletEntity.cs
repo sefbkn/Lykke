@@ -1,9 +1,4 @@
-﻿using System.Threading.Tasks;
-using AzureStorage;
-using AzureStorage.Tables;
-using Lykke.Service.Decred.Api.Common;
-using Microsoft.WindowsAzure.Storage;
-using Microsoft.WindowsAzure.Storage.Table;
+﻿using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Lykke.Service.Decred.Api.Services
 {
