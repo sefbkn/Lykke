@@ -40,7 +40,7 @@ namespace Lykke.Service.Decred.Api.Services
             // and map as inputs to new transaction
             var allInputs = 
                (from output in await _txRepo.GetUnspentTxOutputs(request.FromAddress)
-                let txHash = new Blake256Hash(HexUtil.BytesFromHexString(output.Hash))
+                let txHash = new Blake256Hash(HexUtil.BytesFromHexString(output.Hash).Reverse().ToArray())
                 let outpoint = new Transaction.OutPoint(txHash, output.OutputIndex, output.Tree)
                 select new Transaction.Input(
                     outpoint,

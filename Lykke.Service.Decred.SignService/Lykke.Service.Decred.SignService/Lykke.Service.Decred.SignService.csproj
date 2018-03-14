@@ -3,12 +3,19 @@
     <TargetFramework>netcoreapp2.0</TargetFramework>
   </PropertyGroup>
   <ItemGroup>
-    <Folder Include="wwwroot\" />
-  </ItemGroup>
-  <ItemGroup>
     <PackageReference Include="Microsoft.AspNetCore.All" Version="2.0.0" />
   </ItemGroup>
   <ItemGroup>
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="2.0.0" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\src\Lykke.Service.Decred.SignService.Core\Lykke.Service.Decred.SignService.Core.csproj">
+      <Project>{E1F9A5B8-D029-4964-A01D-7220F6062883}</Project>
+      <Name>Lykke.Service.Decred.SignService.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\src\Lykke.Service.Decred.SignService.Services\Lykke.Service.Decred.SignService.Services.csproj">
+      <Project>{E19801D5-47D8-4C07-9A25-620352C0469E}</Project>
+      <Name>Lykke.Service.Decred.SignService.Services</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>
