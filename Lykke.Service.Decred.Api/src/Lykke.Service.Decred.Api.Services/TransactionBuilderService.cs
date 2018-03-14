@@ -23,6 +23,7 @@ namespace Lykke.Service.Decred.Api.Services
         
         public async Task<BuildTransactionResponse> BuildSingleTransactionAsync(BuildSingleTransactionRequest request, decimal feeFactor)
         {
+            const uint sequence = uint.MaxValue;
             const int outputVersion = 0;
             const int lockTime = 0;
             const int expiry = 0;
@@ -38,16 +39,16 @@ namespace Lykke.Service.Decred.Api.Services
             // Get all unspent transaction outputs to address
             // and map as inputs to new transaction
             var allInputs = 
-               (from output in await _txRepo.GetUnspentOutputs(request.FromAddress)
+               (from output in await _txRepo.GetUnspentTxOutputs(request.FromAddress)
                 let txHash = new Blake256Hash(HexUtil.BytesFromHexString(output.Hash))
                 let outpoint = new Transaction.OutPoint(txHash, output.OutputIndex, output.Tree)
                 select new Transaction.Input(
                     outpoint,
-                    0,
+                    sequence,
                     output.OutputValue,
                     output.BlockHeight,
                     output.BlockIndex,
-                    new byte[0]
+                    output.PkScript
                 )).ToArray();
 
             

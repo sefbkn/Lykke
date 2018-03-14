@@ -32,12 +32,6 @@ namespace Lykke.Service.Decred.Api
             public string Host { get; set; }
             public int Port { get; set; }
         }
-
-        [JsonProperty("dcrd")]
-        public Config Dcrd { get; set; }
-        
-        [JsonProperty("dcrwallet")]
-        public Config DcrWallet { get; set; }
         
         [JsonProperty("dcrdata")]
         public Config DcrData { get; set; }

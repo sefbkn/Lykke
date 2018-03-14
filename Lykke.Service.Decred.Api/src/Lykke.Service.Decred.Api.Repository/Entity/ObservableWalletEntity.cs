@@ -12,11 +12,22 @@ namespace Lykke.Service.Decred.Api.Services
     /// </summary>
     public class ObservableWalletEntity : TableEntity
     {
-        public string Address { get; set; }
+        private string _address;
+
+        public string Address
+        {
+            get { return _address; }
+            set 
+            { 
+                _address = value;
+                RowKey = value;
+            }
+        }
 
         public ObservableWalletEntity()
         {
             PartitionKey = "ByAddress";
+            RowKey = Address;
         }
     }
 }

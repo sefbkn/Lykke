@@ -38,7 +38,7 @@ namespace Lykke.Service.Decred.Api.Services.Test
                 Tree = 0
             };
             
-            _mockTxRepo.Setup(m => m.GetUnspentOutputs(fromAddr)).ReturnsAsync(new[]{unspentOutput});
+            _mockTxRepo.Setup(m => m.GetUnspentTxOutputs(fromAddr)).ReturnsAsync(new[]{unspentOutput});
             _mockFeeService.Setup(m => m.CalculateFee(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<decimal>()))
                 .Returns(1);
             

@@ -19,31 +19,29 @@ namespace Decred.BlockExplorer
             _dbConnection = dbConnection;
         }
 
-        /// <summary>
-        /// Discovers the balance of the given addresses at a particular block height
-        /// </summary>
-        /// <param name="blockHeight"></param>
-        /// <param name="addresses"></param>
-        /// <returns></returns>
-        public async Task<AddressBalance> GetAddressBalanceAsync(long blockHeight, string address)
+        public async Task<AddressBalance[]> GetAddressBalancesAsync(long maxBlockHeight, string[] addresses)
         {
-            var balance = new AddressBalance { Address = address, Block = blockHeight };
-            
-            var query = 
+            const string query = 
                 @"select address as Address, sum(value) as Balance from addresses " +
-                "join transactions on transactions.id = funding_tx_row_id " +
-                "where block_height <= @blockHeight and address = @address and spending_tx_hash is null " +
-                "group by address";
+                 "join transactions on transactions.id = funding_tx_row_id " +
+                 "where block_height <= @maxBlockHeight and address = any(@addresses) and spending_tx_hash is null " +
+                 "group by address";
             
             var results = (await _dbConnection.QueryAsync<AddressBalance>(query, 
-                new { blockHeight = blockHeight, address = address })).ToList();
+                new { maxBlockHeight = maxBlockHeight, addresses = addresses })).ToList();
 
-            if (results.Any())
+            // Since some addresses with 0 balance may not be returned, make sure return value has
+            // corresponding value for each provided address.
+            var balances = addresses.Select(address => new AddressBalance
             {
-                balance.Balance = results.First().Balance;
-            }
+                Address = address,
+                Block = maxBlockHeight
+            }).ToDictionary(balance => balance.Address);
 
-            return balance;
+            foreach (var result in results)
+                balances[result.Address].Balance = result.Balance;
+            
+            return balances.Values.ToArray();
         }
 
         public async Task<Block> GetHighestBlock()

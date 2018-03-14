@@ -9,7 +9,7 @@ namespace Lykke.Service.Decred.Api.Services
         long CalculateFee(int numInputs, int numOutputs, decimal feeFactor);
     }
     
-    public class TransactionFeeService
+    public class TransactionFeeService : ITransactionFeeService
     {
         private static readonly Transaction.Output[] _dummyOutput = { new Transaction.Output(-1, 0, new byte[25]) };
 

@@ -11,6 +11,12 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Lykke.Service.Decred.Api.Controllers
 {
+    public class SimpleClass
+    {
+        public string A { get; set; }
+        public string B { get; set; }
+    }
+    
     public class OperationController : Controller
     {
         private readonly TransactionHistoryService _transactionHistoryService;
@@ -35,6 +41,12 @@ namespace Lykke.Service.Decred.Api.Controllers
             };
         }
         
+        [HttpPost("api/transactions/simple")]
+        public async Task<IActionResult> TestMethod([FromBody] BuildSingleTransactionRequest request)
+        {
+            return Json(request);
+        }
+
         [HttpPost("api/transactions/single")]
         public async Task<IActionResult> BuildSingleTransaction([FromBody] BuildSingleTransactionRequest request)
         {
@@ -44,7 +56,7 @@ namespace Lykke.Service.Decred.Api.Controllers
         }
         
         private async Task<IActionResult> BuildTxInternal(BuildSingleTransactionRequest request, decimal feeFactor)
-        {
+        {            
             try
             {
                 var txResponse = await _txBuilderService.BuildSingleTransactionAsync(request, feeFactor);
