@@ -1,12 +1,7 @@
 ﻿using System.Runtime.Serialization;
 
-namespace Lykke.Service.Decred_SignService.Core.Services
+namespace Lykke.Service.Decred.SignService.Core.Services
 {
-    public interface IWalletProvider
-    {
-        WalletCreationResponse CreateNewWallet();
-    }
-    
     [DataContract]
     public class WalletCreationResponse
     {

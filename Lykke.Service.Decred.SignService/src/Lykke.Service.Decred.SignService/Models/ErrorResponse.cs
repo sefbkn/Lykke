@@ -1,90 +1,51 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Runtime.Serialization;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 
-namespace Lykke.Service.Decred_SignService.Models
+namespace Lykke.Service.Decred.SignService.Models
 {
+    /// <summary>
+    /// Returned as response to all invalid controllers
+    /// </summary>
     public class ErrorResponse
     {
-        public string ErrorMessage { get; }
+        [DataMember(Name = "errorMessage")]
+        public string Message { get; }
 
-        public Dictionary<string, List<string>> ModelErrors { get; }
+        [DataMember(Name = "modelErrors")]
+        public Dictionary<string, string[]> Errors { get; }
 
-        private ErrorResponse() :
-            this(null)
+        public ErrorResponse(string message = null)
         {
+            Message = message;
+            Errors = new Dictionary<string, string[]>();
+        }
+        
+        public ErrorResponse(string message, ModelStateDictionary modelState) : this(message)
+        {
+            Message = message;            
+            AddErrors(modelState);
+        }
+        
+        private void AddErrors(string key, params string[] message)
+        {
+            if (Errors.ContainsKey(key))
+                return;
+            Errors.Add(key, message);
         }
 
-        private ErrorResponse(string errorMessage)
+        private void AddErrors(ModelStateDictionary modelState)
         {
-            ErrorMessage = errorMessage;
-            ModelErrors = new Dictionary<string, List<string>>();
-        }
-
-        public ErrorResponse AddModelError(string key, string message)
-        {
-            if (!ModelErrors.TryGetValue(key, out List<string> errors))
-            {
-                errors = new List<string>();
-
-                ModelErrors.Add(key, errors);
-            }
-
-            errors.Add(message);
-
-            return this;
-        }
-
-        public ErrorResponse AddModelError(string key, Exception exception)
-        {
-            var ex = exception;
-            var sb = new StringBuilder();
-
-            while (true)
-            {
-                sb.AppendLine(ex.Message);
-
-                ex = ex.InnerException;
-
-                if (ex == null)
-                {
-                    return AddModelError(key, sb.ToString());
-                }
-
-                sb.Append(" -> ");
-            }
-        }
-
-        public static ErrorResponse Create()
-        {
-            return new ErrorResponse();
-        }
-
-        public static ErrorResponse Create(ModelStateDictionary modelState)
-        {
-            var response = new ErrorResponse();
-
-            foreach (var state in modelState)
-            {
-                var messages = state.Value.Errors
-                    .Where(e => !string.IsNullOrWhiteSpace(e.ErrorMessage))
-                    .Select(e => e.ErrorMessage)
-                    .Concat(state.Value.Errors
-                        .Where(e => string.IsNullOrWhiteSpace(e.ErrorMessage))
-                        .Select(e => e.Exception.Message))
-                    .ToList();
-
-                response.ModelErrors.Add(state.Key, messages);
-            }
-
-            return response;
-        }
-
-        public static ErrorResponse Create(string message)
-        {
-            return new ErrorResponse(message);
+            var errors =
+                from entry in modelState
+                select new {
+                    entry.Key, 
+                    Value = entry.Value.Errors.Select(error => error.ErrorMessage ?? error.Exception.Message)
+                };
+            
+            foreach(var error in errors)
+                AddErrors(error.Key, error.Value.ToArray());
         }
     }
 }

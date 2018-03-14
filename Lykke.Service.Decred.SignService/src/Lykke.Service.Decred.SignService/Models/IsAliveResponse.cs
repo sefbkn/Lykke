@@ -1,19 +1,24 @@
-﻿using System.Collections.Generic;
+﻿using System;
 
-namespace Lykke.Service.Decred_SignService.Models
+namespace Lykke.Service.Decred.SignService.Models
 {
+    /// <summary>
+    /// Returned as valid response for calls to
+    /// GET api/isalive
+    /// </summary>
     public class IsAliveResponse
     {
-        public string Name { get; set; }
-        public string Version { get; set; }
-        public string Env { get; set; }
-        public bool IsDebug { get; set; }
-        public IEnumerable<IssueIndicator> IssueIndicators { get; set; }
+        public string Name { get; }
+        public string Version { get; }
+        public string Environment { get; }
+        public bool IsDebug { get; }
 
-        public class IssueIndicator
+        public IsAliveResponse(string name, string version, string env, bool isDebug)
         {
-            public string Type { get; set; }
-            public string Value { get; set; }
+            IsDebug = isDebug;
+            Name = name ?? throw new ArgumentNullException(nameof(name));
+            Version = version ?? throw new ArgumentNullException(nameof(version));
+            Environment = env ?? throw new ArgumentNullException(nameof(env));
         }
     }
 }

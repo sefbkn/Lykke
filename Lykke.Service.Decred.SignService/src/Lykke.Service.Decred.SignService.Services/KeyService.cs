@@ -1,36 +1,41 @@
 ﻿using System;
 using System.Security.Cryptography;
-using Decred.Common;
+using Lykke.Service.Decred.SignService.Core.Services;
 using Lykke.Service.Decred.SignService.Services;
 using Lykke.Service.Decred_SignService.Core.Services;
-using NDecred.Cryptography;
+using NDecred.Common;
 
 namespace Lykke.Service.Decred.SignService.Services
 {
-    public class WalletProvider : IWalletProvider
+    /// <summary>
+    /// Creates keys that can be used in transactions.
+    /// </summary>
+    public class KeyService : IKeyService
     {
-        private const int PrivateKeyLength = 32;
-        private static readonly RNGCryptoServiceProvider CRandom = new RNGCryptoServiceProvider();
-
         private readonly Network _network;
-        private readonly ECSecurityService _securityService;
+        private readonly SecurityService _securityService;
 
-        public WalletProvider(ECSecurityService securityService, Network network)
+        public KeyService(SecurityService securityService, Network network)
         {
             _securityService = securityService;
             _network = network;
         }
         
-        public WalletCreationResponse CreateNewWallet()
+        public WalletCreationResponse Create()
         {
-            var privateKey = GetRandomBytes();
+            var privateKey = _securityService.NewPrivateKey();
             var publicKey = _securityService.GetPublicKey(privateKey, true);
             
             return new WalletCreationResponse
             {
-                PrivateKey = Wif.Serialize(_network, ECDSAType.ECTypeSecp256k1, false, privateKey),
+                PrivateKey = GetWif(privateKey),
                 PublicAddress = GetPublicAddress(publicKey)
             };
+        }
+
+        private string GetWif(byte[] privateKey)
+        {
+            return Wif.Serialize(_network, ECDSAType.ECTypeSecp256k1, false, privateKey);
         }
 
         private string GetPublicAddress(byte[] publicKey)
@@ -38,13 +43,6 @@ namespace Lykke.Service.Decred.SignService.Services
             var prefix = _network.AddressPrefix.PayToPublicKeyHash;
             var pubKeyHash = HashUtil.Ripemd160(HashUtil.Blake256(publicKey));
             return new Base58Check().Encode(prefix, pubKeyHash, false);
-        }
-
-        public virtual byte[] GetRandomBytes()
-        {
-            var bytes = new byte[PrivateKeyLength];
-            CRandom.GetBytes(bytes);
-            return bytes;
         }
     }
 }
