@@ -5,7 +5,7 @@ using Lykke.Service.Decred.SignService.Services;
 using Lykke.Service.Decred_SignService.Core.Services;
 using NDecred.Cryptography;
 
-namespace Lykke.Service.Decred_SignService.Services
+namespace Lykke.Service.Decred.SignService.Services
 {
     public class WalletProvider : IWalletProvider
     {

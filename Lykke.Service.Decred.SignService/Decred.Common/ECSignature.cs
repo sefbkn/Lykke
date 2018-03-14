@@ -13,6 +13,7 @@ namespace Lykke.Service.Decred.SignService.Services
     {
         private BigInteger CurveOrder { get; }
         private BigInteger HalfOrder { get; }
+        
         public ECSignature(BigInteger r, BigInteger s)
         {
             R = r;

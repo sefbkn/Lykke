@@ -1,14 +1,24 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Emit;
 using Decred.Common;
 using Lykke.Service.Decred.SignService.Services;
 using NDecred.Common;
 using Paymetheus.Decred;
 using Paymetheus.Decred.Script;
 
-namespace Lykke.Service.Decred_SignService.Services
+namespace Lykke.Service.Decred.SignService.Services
 {
-    public class SigningService
+    public interface ISigningService
+    {
+        string SignRawTransaction(string[] privateKeys, byte[] rawTxBytes);
+    }
+    
+    /// <summary>
+    /// Signs raw transactions
+    /// </summary>
+    public class SigningService : ISigningService
     {
         private readonly ECSecurityService _securityService;
         private readonly Network _network;
@@ -19,53 +29,115 @@ namespace Lykke.Service.Decred_SignService.Services
             _network = network;
         }
         
-        public string SignRawTransaction(string[] privateKeys, string rawTransaction)
-        {
-            // Transaction encoded in hex.
-            var txBytes = Hex.ToByteArray(rawTransaction);
-            var transaction = Transaction.Deserialize(txBytes);
-            
-            // Go through each input and extract the signature script.
-            // Convert each private key to a pubkeyhash
-            var pubKeyHashes = privateKeys.Select(privateKey => new
-            {
-                PrivateKey = GetPrivateKey(privateKey),
-                PublicKeyHash = GetPublicKeyHash(privateKey)
-            }).ToList();
+        /// <summary>
+        /// Given a collection of private keys and a raw transaction
+        /// 
+        /// * Each input must have the public key script from the respective output
+        ///     assigned to the signature script.
+        /// </summary>
+        /// <param name="privateKeys"></param>
+        /// <param name="rawTxBytes"></param>
+        /// <returns></returns>
+        public string SignRawTransaction(string[] privateKeys, byte[] rawTxBytes)
+        {   
+            // Deserialize wifs and generate privatekey/publickey/pubkeyhash mappings
+            var keys =
+               (from wif in privateKeys
+                let privKey = Wif.Deserialize(_network, wif)
+                select ExpandPrivateKey(privKey)).ToArray();
 
-            // Match up all private keys to the inputs they unlock.
-            var query =
-                from input in transaction.Inputs.Select((value, index) => (value: value, index: index))
-                let outputScript = OutputScript.ParseScript(input.value.SignatureScript)
-                    as OutputScript.Secp256k1PubKeyHash
-                where outputScript != null
-                from pubKeyHash in pubKeyHashes
-                where pubKeyHash.PublicKeyHash.SequenceEqual(outputScript.Hash160)
-                select new
+            // This is the transaction that will have properly signed inputs.
+            var transaction = DecodeTransaction(rawTxBytes);
+            
+            foreach (var input in transaction.TxIn)
+            {
+                // Clone the base transaction
+                var txCopy = DecodeTransaction(rawTxBytes);
+
+                // Match the private key with the public key script for this input
+                // Note: the public key script is embedded in the signature script portion of the transaction.
+                var publicKeyHash = GetPublicKeyHash(input.SignatureScript);
+                var key = keys.Single(k => k.PublicKeyHash.SequenceEqual(publicKeyHash));
+
+                // Zero out all scripts except the current one.
+                foreach (var txCopyIn in txCopy.TxIn)
                 {
-                    input, outputScript, pubKeyHash
-                };
+                    // Skip the current TxIn
+                    if (input.PreviousOutPoint.Hash.SequenceEqual(txCopyIn.PreviousOutPoint.Hash) &&
+                        input.PreviousOutPoint.Index == txCopyIn.PreviousOutPoint.Index) continue;
+                    
+                    txCopyIn.SignatureScript = new byte[0];                  
+                }
+                
+                // Calculate the tx signature for this input,
+                // and sign the hash
+                var txHash = CalculateTxHash(txCopy);
+                var signature = _securityService.Sign(key.PrivateKey, txHash).MakeCanonical().ToDer();
+                var sigBytes = signature.Concat(new[]{(byte) SignatureHashType.All}).ToArray();
 
-
-            foreach (var output in transaction.Outputs)
-            {
+                input.SignatureScript = GetSignatureScript(sigBytes, key.PublicKey);
             }
-            
-            _securityService.Sign(null, null);
-            
-            throw new Exception();
+
+            return Hex.FromByteArray(transaction.Encode());
         }
 
-        private byte[] GetPrivateKey(string wif)
+        private static byte[] GetSignatureScript(byte[] signature, byte[] publicKey)
         {
-            return Wif.Deserialize(_network, wif);
+            if(signature.Length > 75)
+                throw new TransactionSigningException("Signature too long");
+            if(publicKey.Length > 75)
+                throw new TransactionSigningException("Public key too long");
+            
+            var unlockingScript = new List<byte>();            
+            unlockingScript.Add((byte) signature.Length);
+            unlockingScript.AddRange(signature);
+            unlockingScript.Add((byte) publicKey.Length);
+            unlockingScript.AddRange(publicKey);
+            return unlockingScript.ToArray();
+        }
+
+        private static byte[] GetPublicKeyHash(byte[] rawPkScript)
+        {
+            // Only support Secp256k1 signatures
+            var outScript = OutputScript.ParseScript(rawPkScript);
+            if (!(outScript is OutputScript.Secp256k1PubKeyHash parsedScript))
+                throw new TransactionSigningException("Unsupported signature script type");
+
+            return parsedScript.Hash160;
         }
         
-        private byte[] GetPublicKeyHash(string wif)
+        private static MsgTx DecodeTransaction(byte[] rawTransaction)
         {
-            var privateKey = GetPrivateKey(wif);
-            var publicKey = _securityService.GetPublicKey(privateKey, true);
-            return HashUtil.Ripemd160(HashUtil.Blake256(publicKey));
+            var msgTx = new MsgTx();
+            msgTx.Decode(rawTransaction);
+            return msgTx;
         }
-    }
+
+        public byte[] CalculateTxHash(MsgTx transaction)
+        {
+            var wbuf = new List<byte>(32 * 2 + 4);
+            wbuf.AddRange(BitConverter.GetBytes((uint) 1));
+
+            var prefixHash = transaction.GetHash(TxSerializeType.NoWitness);
+            var witnessHash = transaction.GetHash(TxSerializeType.WitnessSigning);
+
+            wbuf.AddRange(prefixHash);
+            wbuf.AddRange(witnessHash);
+
+            return HashUtil.Blake256(wbuf.ToArray());
+        }
+
+        /// <summary>
+        /// Maps a private key to a compressed public key + compressed public key hash
+        /// </summary>
+        /// <param name="privateKey"></param>
+        /// <returns></returns>
+        private (byte[] PrivateKey, byte[] PublicKey, byte[] PublicKeyHash) ExpandPrivateKey(byte[] privateKey)
+        {
+            var ecService = new ECSecurityService();
+            var publicKey = ecService.GetPublicKey(privateKey, true);
+            var publicKeyHash = HashUtil.Ripemd160(HashUtil.Blake256(publicKey));
+            return (privateKey, publicKey, publicKeyHash);
+        }
+    }    
 }

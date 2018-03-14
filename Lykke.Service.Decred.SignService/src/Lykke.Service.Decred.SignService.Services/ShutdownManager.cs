@@ -4,7 +4,7 @@ using Common;
 using Common.Log;
 using Lykke.Service.Decred_SignService.Core.Services;
 
-namespace Lykke.Service.Decred_SignService.Services
+namespace Lykke.Service.Decred.SignService.Services
 {
     // NOTE: Sometimes, shutdown process should be expressed explicitly. 
     // If this is your case, use this class to manage shutdown.

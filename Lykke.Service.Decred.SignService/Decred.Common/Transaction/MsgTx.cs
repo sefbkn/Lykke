@@ -143,12 +143,5 @@ namespace Decred.Common
 
             return HashUtil.Blake256(bytes);
         }
-
-        public byte[] GetFullHash()
-        {
-            var prefixHash = GetHash(TxSerializeType.NoWitness);
-            var witnessHash = GetHash(TxSerializeType.OnlyWitness);
-            return HashUtil.Blake256(prefixHash, witnessHash);
-        }
     }
 }

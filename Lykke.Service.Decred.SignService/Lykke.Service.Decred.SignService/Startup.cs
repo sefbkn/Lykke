@@ -37,6 +37,7 @@ namespace Lykke.Service.Decred.SignService
             var network = Configuration.GetValue<string>("Network");
             services.AddTransient(s => Network.ByName(network));
             services.AddTransient<ECSecurityService>();
+            services.AddTransient<SigningService>();
             services.AddTransient<IWalletProvider, WalletProvider>();
         }
 
