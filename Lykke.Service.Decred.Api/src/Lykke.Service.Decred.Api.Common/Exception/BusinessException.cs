@@ -17,5 +17,7 @@ namespace Lykke.Service.Decred.Api.Common
         DuplicateRecord = 0,
         RecordNotFound = 1,
         InvalidAddress = 2,
+        AmountTooSmall = 3,
+        NotEnoughBalance = 4,
     }
 }
