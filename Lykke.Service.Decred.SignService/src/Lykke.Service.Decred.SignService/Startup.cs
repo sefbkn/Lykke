@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using NDecred.Common;
+using NDecred.Common.Wallet;
 
 namespace Lykke.Service.Decred.SignService
 {
@@ -29,7 +30,8 @@ namespace Lykke.Service.Decred.SignService
 
             var network = Configuration.GetValue<string>("Network");
             services.AddTransient(s => Network.ByName(network));
-            services.AddTransient<SecurityService>();
+            services.AddTransient<ISigningWallet, SigningWallet>();
+            services.AddTransient<ISecurityService, SecurityService>();
             services.AddTransient<SigningService>();
             services.AddTransient<IKeyService, KeyService>();
         }

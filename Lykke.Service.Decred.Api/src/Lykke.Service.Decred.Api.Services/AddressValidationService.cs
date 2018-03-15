@@ -23,7 +23,7 @@ namespace Lykke.Service.Decred.Api.Services
             if (network == null) throw new ArgumentNullException(nameof(network));
             if (network.Name == null) throw new ArgumentNullException(nameof(network.Name));
             
-            switch (network.Name)
+            switch (network.Name.ToLower())
             {
                 case "mainnet":
                 case "testnet":

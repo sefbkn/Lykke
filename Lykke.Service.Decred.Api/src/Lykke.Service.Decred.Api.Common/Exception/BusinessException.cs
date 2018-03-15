@@ -12,8 +12,9 @@ namespace Lykke.Service.Decred.Api.Common
         }
     }
 
-    public enum ErrorReason
+    public enum ErrorReason : byte
     {
+        Unknown = 0xff,
         DuplicateRecord = 0,
         RecordNotFound = 1,
         InvalidAddress = 2,

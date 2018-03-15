@@ -12,7 +12,7 @@ namespace Lykke.Service.Decred.Api.Controllers
 
         public AssetsController(IOptions<AppSettings> settings)
         {
-            var assetConfig = settings.Value?.ApiConfig?.Asset;
+            var assetConfig = settings.Value?.Asset;
             if(assetConfig == null)
                 throw new ArgumentException("Asset property must be set.");
             if(assetConfig.Precision < 0)

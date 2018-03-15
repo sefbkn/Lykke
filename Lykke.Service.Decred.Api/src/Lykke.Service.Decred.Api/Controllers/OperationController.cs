@@ -7,6 +7,7 @@ using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Lykke.Service.Decred.Api.Common;
 using Lykke.Service.Decred.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using Paymetheus.Decred;
 
 namespace Lykke.Service.Decred.Api.Controllers
 {
@@ -20,13 +21,16 @@ namespace Lykke.Service.Decred.Api.Controllers
     {
         private readonly TransactionHistoryService _transactionHistoryService;
         private readonly TransactionBuilderService _txBuilderService;
+        private readonly ITransactionBroadcastService _txBroadcastService;
 
         public OperationController(
             TransactionHistoryService transactionHistoryService,
-            TransactionBuilderService txBuilderService)
+            TransactionBuilderService txBuilderService,
+            ITransactionBroadcastService txBroadcastService)
         {
             _transactionHistoryService = transactionHistoryService;
             _txBuilderService = txBuilderService;
+            _txBroadcastService = txBroadcastService;
         }
         
         [HttpGet("api/capabilities")]
@@ -79,46 +83,31 @@ namespace Lykke.Service.Decred.Api.Controllers
             }
         }
 
-        [HttpPost("api/transactions/many-inputs")]
-        public IActionResult BuildManyInputsTransaction([FromBody] BuildTransactionWithManyInputsRequest request)
-        {
-            return StatusCode((int) HttpStatusCode.NotImplemented);
-        }
-        
-        [HttpPost("api/transactions/many-outputs")]
-        public IActionResult BuildManyOutputsTransaction([FromBody] BuildTransactionWithManyOutputsRequest request)
-        {
-            return StatusCode((int) HttpStatusCode.NotImplemented);
-        }
-
-        [HttpPut("api/transactions")]
-        public IActionResult RebuildTransaction([FromBody] RebuildTransactionRequest request)
-        {
-            return StatusCode((int) HttpStatusCode.NotImplemented);
-        }
-
         [HttpGet("api/transactions/broadcast/single/{operationId}")]
-        public async Task<object> GetBroadcastedSingleTx(Guid operationId)
+        public async Task<BroadcastedSingleTransactionResponse> GetBroadcastedSingleTx(Guid operationId)
         {
             throw new NotImplementedException();
         }
         
-        [HttpGet("api/transactions/broadcast/many-inputs/{operationId}")]
-        public async Task<object> GetBroadcastedManyInputsTx(Guid operationId)
-        {
-            return StatusCode((int) HttpStatusCode.NotImplemented);
-        }
-        
-        [HttpGet("api/transactions/broadcast/many-outputs/{operationId}")]
-        public async Task<object> GetBroadcastedManyOutputsTx(Guid operationId)
-        {
-            return StatusCode((int) HttpStatusCode.NotImplemented);
-        }
-
         [HttpPost("api/transactions/broadcast")]
-        public async Task<BroadcastedTransactionOutputContract> Broadcast([FromBody] BroadcastTransactionRequest request)
+        public async Task<IActionResult> Broadcast([FromBody] BroadcastTransactionRequest request)
         {
-            throw new NotImplementedException();
+            // TODO: Properly handle exceptions
+            try
+            {
+                await _txBroadcastService.Broadcast(request.SignedTransaction);
+                return Json(new {
+                    errorMessage = ""
+                });
+            }
+            catch (TransactionBroadcastException e)
+            {
+                // amountIsTooSmall | notEnoughBalance
+                Response.StatusCode = 500;
+                return Json(new {
+                    errorMessage = e.Message
+                });
+            }
         }
 
         [HttpGet("api/transactions/broadcast/{operationId}")]
@@ -202,6 +191,37 @@ namespace Lykke.Service.Decred.Api.Controllers
         public async Task<IEnumerable<HistoricalTransactionContract>> GetTransactionsToAddress(string address, int take, string afterHash = null)
         {
             return await _transactionHistoryService.GetTransactionsToAddress(address, take, afterHash);
+        }
+        
+        // Not implemented
+        [HttpPost("api/transactions/many-inputs")]
+        public IActionResult BuildManyInputsTransaction([FromBody] BuildTransactionWithManyInputsRequest request)
+        {
+            return StatusCode((int) HttpStatusCode.NotImplemented);
+        }
+        
+        [HttpPost("api/transactions/many-outputs")]
+        public IActionResult BuildManyOutputsTransaction([FromBody] BuildTransactionWithManyOutputsRequest request)
+        {
+            return StatusCode((int) HttpStatusCode.NotImplemented);
+        }
+
+        [HttpPut("api/transactions")]
+        public IActionResult RebuildTransaction([FromBody] RebuildTransactionRequest request)
+        {
+            return StatusCode((int) HttpStatusCode.NotImplemented);
+        }
+
+        [HttpGet("api/transactions/broadcast/many-inputs/{operationId}")]
+        public async Task<IActionResult> GetBroadcastedManyInputsTx(Guid operationId)
+        {
+            return StatusCode((int) HttpStatusCode.NotImplemented);
+        }
+        
+        [HttpGet("api/transactions/broadcast/many-outputs/{operationId}")]
+        public async Task<IActionResult> GetBroadcastedManyOutputsTx(Guid operationId)
+        {
+            return StatusCode((int) HttpStatusCode.NotImplemented);
         }
     }
 }

@@ -13,11 +13,6 @@ namespace Lykke.Service.Decred.Api.Services
     {
         private static readonly Transaction.Output[] _dummyOutput = { new Transaction.Output(-1, 0, new byte[25]) };
 
-        public TransactionFeeService()
-        {
-            
-        }
-        
         public long CalculateFee(int numInputs, int numOutputs, decimal feeFactor)
         {
             var outputs = _dummyOutput.Repeat(numOutputs).ToArray();
