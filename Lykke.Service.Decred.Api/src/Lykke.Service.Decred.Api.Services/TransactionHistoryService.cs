@@ -16,6 +16,8 @@ namespace Lykke.Service.Decred.Api.Services
 
     public class ObservableAddressActivityEntity : TableEntity
     {
+        private string _address;
+
         public ObservableAddressActivityEntity()
         {
             PartitionKey = "ByDirectedAddress";
@@ -26,10 +28,20 @@ namespace Lykke.Service.Decred.Api.Services
             Address = address;
             TxDirection = direction;
         }
-        
-        public string Address { get; set; }
+
+        public string Address
+        {
+            get { return _address; }
+            set { _address = value;
+                RowKey = value;
+            }
+        }
+
         public TxDirection TxDirection { get; set; }
-        public string DirectedAddress => Address + TxDirection;
+        public string DirectedAddress {
+            get { return Address + TxDirection; }
+            set {  }
+        }
     }
     
     public class TransactionHistoryService
@@ -126,6 +138,7 @@ namespace Lykke.Service.Decred.Api.Services
         public async Task<HistoricalTransactionContract[]> GetTransactionsToAddress(string address, int take, string afterHash = null)
         {
             var results = await _txRepo.GetTransactionsFromAddress(address, take, afterHash);
+            
             return results.Select(r => new HistoricalTransactionContract
             {
                 Amount = r.Amount,
@@ -133,6 +146,8 @@ namespace Lykke.Service.Decred.Api.Services
                 FromAddress = r.FromAddress,
                 ToAddress = r.ToAddress,
                 Hash = r.Hash,
+                
+                // TODO: Fill these values in 
                 
                 // If the transaction was broadcast using the Lykke decred service, log the operation id.
                 OperationId = Guid.Empty,

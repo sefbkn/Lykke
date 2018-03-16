@@ -47,6 +47,7 @@ namespace Lykke.Service.Decred.Api.Repository
         {
             try
             {
+                value.ETag = "*";
                 await _azureRepo.InsertAsync(value);
             }
             catch (StorageException e) when (e.RequestInformation.HttpStatusCode == DuplicateRecordStatus)

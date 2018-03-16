@@ -92,22 +92,19 @@ namespace Lykke.Service.Decred.Api.Controllers
         [HttpPost("api/transactions/broadcast")]
         public async Task<IActionResult> Broadcast([FromBody] BroadcastTransactionRequest request)
         {
-            // TODO: Properly handle exceptions
             try
             {
                 await _txBroadcastService.Broadcast(request.SignedTransaction);
-                return Json(new {
-                    errorMessage = ""
-                });
+                Response.StatusCode = 200;
             }
             catch (TransactionBroadcastException e)
             {
-                // amountIsTooSmall | notEnoughBalance
                 Response.StatusCode = 500;
-                return Json(new {
-                    errorMessage = e.Message
-                });
             }
+
+            return Json(new {
+                errorMessage = ""
+            });
         }
 
         [HttpGet("api/transactions/broadcast/{operationId}")]
@@ -192,8 +189,9 @@ namespace Lykke.Service.Decred.Api.Controllers
         {
             return await _transactionHistoryService.GetTransactionsToAddress(address, take, afterHash);
         }
-        
-        // Not implemented
+
+        #region Not implemented endpoints
+
         [HttpPost("api/transactions/many-inputs")]
         public IActionResult BuildManyInputsTransaction([FromBody] BuildTransactionWithManyInputsRequest request)
         {
@@ -223,5 +221,7 @@ namespace Lykke.Service.Decred.Api.Controllers
         {
             return StatusCode((int) HttpStatusCode.NotImplemented);
         }
+        
+        #endregion
     }
 }

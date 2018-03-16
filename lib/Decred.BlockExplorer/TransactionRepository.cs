@@ -60,7 +60,7 @@ namespace Decred.BlockExplorer
                 from addresses from_addr
                 join addresses to_addr on to_addr.funding_tx_hash = from_addr.spending_tx_hash
                 where from_addr.address = @address and to_addr.funding_tx_row_id > @minTxId
-                group by to_addr.address, to_addr.value, to_addr.funding_tx_hash, to_addr.funding_tx_row_id
+                group by from_addr.address, to_addr.address, to_addr.value, to_addr.funding_tx_hash, to_addr.funding_tx_row_id
                 order by to_addr.funding_tx_row_id asc
                 limit @take";
 
