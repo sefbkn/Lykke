@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using AzureStorage.Tables;
@@ -53,12 +54,21 @@ namespace Lykke.Service.Decred.Api
             var appSettings = Configuration.Get<AppSettings>();
 
             // Register network dependency
-            services.AddTransient(p => Network.ByName(appSettings.ApiConfig.Network));
+            services.AddTransient(p => Network.ByName(appSettings.Network));
+            services.AddTransient(p => new DcrdConfig
+            {
+                DcrdApiUrl = appSettings.DcrdApiUrl,
+                HttpClientHandler = new HttpClientHandler
+                {
+                    Credentials = new NetworkCredential(appSettings.DcrdRpcUser, appSettings.DcrdRpcPass),
+                }
+            });
             
             services.AddTransient<HttpClient>();
             services.AddTransient<TransactionHistoryService>();
             services.AddTransient<TransactionBuilderService>();
             services.AddTransient<ITransactionFeeService, TransactionFeeService>();
+            services.AddTransient<ITransactionBroadcastService, TransactionBroadcastService>();
             services.AddTransient<IAddressValidationService, AddressValidationService>();
             services.AddTransient<BalanceService>();
         }

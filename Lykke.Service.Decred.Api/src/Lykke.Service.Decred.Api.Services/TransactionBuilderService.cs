@@ -1,27 +1,34 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Decred.BlockExplorer;
+using Lykke.AzureStorage.Tables;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Lykke.Service.Decred.Api.Common;
+using Lykke.Service.Decred.Api.Repository;
 using NDecred.Common;
+using Newtonsoft.Json;
 using Paymetheus.Decred;
 using Paymetheus.Decred.Wallet;
 
 namespace Lykke.Service.Decred.Api.Services
-{
+{    
     public class TransactionBuilderService
     {
         private readonly ITransactionFeeService _feeService;
         private readonly ITransactionRepository _txRepo;
 
-        public TransactionBuilderService(ITransactionFeeService feeService, ITransactionRepository txRepo)
+        public TransactionBuilderService(
+            ITransactionFeeService feeService, 
+            ITransactionRepository txRepo)
         {
             _feeService = feeService;
             _txRepo = txRepo;
         }
         
-        public async Task<BuildTransactionResponse> BuildSingleTransactionAsync(BuildSingleTransactionRequest request, decimal feeFactor)
+        public async Task<BuildTransactionResponse> BuildSingleTransactionAsync(
+            BuildSingleTransactionRequest request, decimal feeFactor)
         {
             const uint sequence = uint.MaxValue;
             const int outputVersion = 0;
@@ -50,7 +57,6 @@ namespace Lykke.Service.Decred.Api.Services
                     output.BlockIndex,
                     output.PkScript
                 )).ToArray();
-
             
             var amount = long.Parse(request.Amount);
 

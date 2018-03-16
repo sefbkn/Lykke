@@ -20,6 +20,17 @@ namespace Lykke.Service.Decred.Api.Repository
             _azureRepo = azureRepo;
         }
 
+        public async Task<bool> ExistsAsync(string partition, string key)
+        {
+            var t = new T
+            {
+                RowKey = key,
+                PartitionKey = partition
+            };
+            
+            return await _azureRepo.RecordExistsAsync(t);
+        }
+        
         public async Task<T> GetAsync(string partition, string key)
         {
             try
@@ -36,6 +47,7 @@ namespace Lykke.Service.Decred.Api.Repository
         {
             try
             {
+                value.ETag = "*";
                 await _azureRepo.InsertAsync(value);
             }
             catch (StorageException e) when (e.RequestInformation.HttpStatusCode == DuplicateRecordStatus)

@@ -7,6 +7,7 @@ using NDecred.Common;
 
 namespace Lykke.Service.Decred.SignService.Controllers
 {
+    [Route("api/[controller]")]
     public class SignController : Controller
     {
         private readonly SigningService _signingService;
