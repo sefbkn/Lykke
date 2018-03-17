@@ -13,7 +13,7 @@ using Paymetheus.Decred;
 using Paymetheus.Decred.Wallet;
 
 namespace Lykke.Service.Decred.Api.Services
-{    
+{
     public class TransactionBuilderService
     {
         private readonly ITransactionFeeService _feeService;
@@ -58,6 +58,7 @@ namespace Lykke.Service.Decred.Api.Services
                     output.PkScript
                 )).ToArray();
             
+            // The amount that is being requested.
             var amount = long.Parse(request.Amount);
 
             long estFee = 0;

@@ -82,15 +82,21 @@ namespace Lykke.Service.Decred.Api
             var connectionString = settings.ConnectionString(a => Configuration.GetConnectionString("azure"));
             
             services.AddTransient
-               <IObservableOperationRepository<ObservableWalletEntity>, AzureObservableOperationRepository<ObservableWalletEntity>>(e => 
-                    new AzureObservableOperationRepository<ObservableWalletEntity>(
+               <IObservableOperationRepository<ObservableWalletEntity>, AzureRepo<ObservableWalletEntity>>(e => 
+                    new AzureRepo<ObservableWalletEntity>(
                         AzureTableStorage<ObservableWalletEntity>.Create(connectionString, "ObservableWallet", consoleLogger)
                     ));
             
             services.AddTransient
-                <IObservableOperationRepository<ObservableAddressActivityEntity>, AzureObservableOperationRepository<ObservableAddressActivityEntity>>(e => 
-                    new AzureObservableOperationRepository<ObservableAddressActivityEntity>(
+                <IObservableOperationRepository<ObservableAddressActivityEntity>, AzureRepo<ObservableAddressActivityEntity>>(e => 
+                    new AzureRepo<ObservableAddressActivityEntity>(
                         AzureTableStorage<ObservableAddressActivityEntity>.Create(connectionString, "ObservableAddress", consoleLogger)
+                    ));
+
+            services.AddTransient
+                <IObservableOperationRepository<KeyValueEntity>, AzureRepo<KeyValueEntity>>(e => 
+                    new AzureRepo<KeyValueEntity>(
+                        AzureTableStorage<KeyValueEntity>.Create(connectionString, "BuildTransactionRequestEntity", consoleLogger)
                     ));
 
             // Write up dcrdata postgres client to monitor transactions and balances.

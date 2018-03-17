@@ -137,7 +137,11 @@ namespace Lykke.Service.Decred.Api.Services
         
         public async Task<HistoricalTransactionContract[]> GetTransactionsToAddress(string address, int take, string afterHash = null)
         {
-            var results = await _txRepo.GetTransactionsFromAddress(address, take, afterHash);
+            var results = await _txRepo.GetTransactionsToAddress(address, take, afterHash);
+            
+            // Query the observation repository by transaction hashes.
+            // Map the tx hash to operation id and assign.
+            // Get the block time as well.
             
             return results.Select(r => new HistoricalTransactionContract
             {

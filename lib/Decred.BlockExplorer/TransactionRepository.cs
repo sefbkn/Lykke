@@ -93,7 +93,8 @@ namespace Decred.BlockExplorer
         
         public async Task<UnspentTxOutput[]> GetUnspentTxOutputs(string address)
         {
-            const string query = @"select
+            const string query = 
+                @"select
                     vouts.tx_tree Tree,
                     vouts.tx_hash as Hash,
                     addr.funding_tx_vout_index OutputIndex,

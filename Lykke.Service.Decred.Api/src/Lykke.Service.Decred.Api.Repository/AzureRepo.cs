@@ -7,35 +7,34 @@ using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Lykke.Service.Decred.Api.Repository
 {
-    public class AzureObservableOperationRepository<T> : IObservableOperationRepository<T> 
-        where T : TableEntity, new()
+    public class AzureRepo<T> : IObservableOperationRepository<T> where T : TableEntity, new()
     {
         private const int RecordNotFoundStatus = 404;
         private const int DuplicateRecordStatus = 409;
 
         private readonly INoSQLTableStorage<T> _azureRepo;
         
-        public AzureObservableOperationRepository(INoSQLTableStorage<T> azureRepo)
+        public AzureRepo(INoSQLTableStorage<T> azureRepo)
         {
             _azureRepo = azureRepo;
         }
 
-        public async Task<bool> ExistsAsync(string partition, string key)
+        public async Task<bool> ExistsAsync(string key)
         {
             var t = new T
             {
                 RowKey = key,
-                PartitionKey = partition
+                PartitionKey = "ByRowKey"
             };
             
             return await _azureRepo.RecordExistsAsync(t);
         }
         
-        public async Task<T> GetAsync(string partition, string key)
+        public async Task<T> GetAsync(RecordType recordType, string key)
         {
             try
             {
-                return await _azureRepo.GetDataAsync(partition, key);
+                return await _azureRepo.GetDataAsync("ByRowKey", KeyValueEntity.GetRowKey(recordType, key));
             }
             catch (StorageException ex) when(ex.RequestInformation.HttpStatusCode == RecordNotFoundStatus)
             {
@@ -47,8 +46,7 @@ namespace Lykke.Service.Decred.Api.Repository
         {
             try
             {
-                value.ETag = "*";
-                await _azureRepo.InsertAsync(value);
+                await _azureRepo.InsertOrReplaceAsync(value);
             }
             catch (StorageException e) when (e.RequestInformation.HttpStatusCode == DuplicateRecordStatus)
             {

@@ -1,36 +1,37 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Lykke.Service.BlockchainApi.Contract.Common;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Lykke.Service.Decred.Api.Common;
+using Lykke.Service.Decred.Api.Repository;
 using Lykke.Service.Decred.Api.Services;
 using Microsoft.AspNetCore.Mvc;
+using NDecred.Common;
+using Newtonsoft.Json;
 using Paymetheus.Decred;
 
 namespace Lykke.Service.Decred.Api.Controllers
 {
-    public class SimpleClass
-    {
-        public string A { get; set; }
-        public string B { get; set; }
-    }
-    
     public class OperationController : Controller
     {
         private readonly TransactionHistoryService _transactionHistoryService;
         private readonly TransactionBuilderService _txBuilderService;
         private readonly ITransactionBroadcastService _txBroadcastService;
+        private readonly IObservableOperationRepository<KeyValueEntity> _operationRepo;
 
         public OperationController(
             TransactionHistoryService transactionHistoryService,
             TransactionBuilderService txBuilderService,
-            ITransactionBroadcastService txBroadcastService)
+            ITransactionBroadcastService txBroadcastService,
+            IObservableOperationRepository<KeyValueEntity> operationRepo)
         {
             _transactionHistoryService = transactionHistoryService;
             _txBuilderService = txBuilderService;
             _txBroadcastService = txBroadcastService;
+            _operationRepo = operationRepo;
         }
         
         [HttpGet("api/capabilities")]
@@ -44,12 +45,6 @@ namespace Lykke.Service.Decred.Api.Controllers
             };
         }
         
-        [HttpPost("api/transactions/simple")]
-        public async Task<IActionResult> TestMethod([FromBody] BuildSingleTransactionRequest request)
-        {
-            return Json(request);
-        }
-
         [HttpPost("api/transactions/single")]
         public async Task<IActionResult> BuildSingleTransaction([FromBody] BuildSingleTransactionRequest request)
         {
@@ -62,9 +57,21 @@ namespace Lykke.Service.Decred.Api.Controllers
         {            
             try
             {
-                var txResponse = await _txBuilderService.BuildSingleTransactionAsync(request, feeFactor);
-                return Json(txResponse);
+                // Check to see if the request exists already.  If so, return the cached object.
+                var cachedRequest = await _operationRepo.GetAsync(RecordType.UnsignedTransaction, request.OperationId.ToString());
+                if (cachedRequest?.Value != null)
+                    return Json(JsonConvert.DeserializeObject(cachedRequest.Value));
+
+                var response = await _txBuilderService.BuildSingleTransactionAsync(request, feeFactor);
+                
+                await _operationRepo.InsertAsync(new KeyValueEntity(
+                    RecordType.UnsignedTransaction,
+                    request.OperationId.ToString(), 
+                    JsonConvert.SerializeObject(response)));
+                
+                return Json(response);
             }
+            
             catch (BusinessException exception) when (exception.Reason == ErrorReason.AmountTooSmall)
             {
                 return Json(new
@@ -73,6 +80,7 @@ namespace Lykke.Service.Decred.Api.Controllers
                     transactionContext = (string) null
                 });
             }
+            
             catch (BusinessException exception) when (exception.Reason == ErrorReason.NotEnoughBalance)
             {
                 return Json(new
@@ -84,9 +92,17 @@ namespace Lykke.Service.Decred.Api.Controllers
         }
 
         [HttpGet("api/transactions/broadcast/single/{operationId}")]
-        public async Task<BroadcastedSingleTransactionResponse> GetBroadcastedSingleTx(Guid operationId)
+        public async Task<IActionResult> GetBroadcastedSingleTx(Guid operationId)
         {
-            throw new NotImplementedException();
+            var cachedRequest = await _operationRepo.GetAsync(RecordType.BroadcastedTransaction, operationId.ToString());
+            if (cachedRequest == null)
+                return NoContent();
+            
+            // Retrieve the tx info, and update it.
+            
+            
+            var broadcastRequest = JsonConvert.DeserializeObject<BroadcastedSingleTransactionResponse>(cachedRequest.Value);
+            return Json(broadcastRequest);
         }
         
         [HttpPost("api/transactions/broadcast")]
@@ -94,29 +110,43 @@ namespace Lykke.Service.Decred.Api.Controllers
         {
             try
             {
-                await _txBroadcastService.Broadcast(request.SignedTransaction);
-                Response.StatusCode = 200;
+                // If this operationid was already broadcast, return 409 conflict.
+                var cachedRequest = await _operationRepo.GetAsync(RecordType.BroadcastedTransaction, request.OperationId.ToString());
+                if (cachedRequest?.Value != null)
+                {
+                    Response.StatusCode = (int) HttpStatusCode.Conflict;
+                }
+                else
+                {
+                    // Broadcast the signed transaction and flag the operation as broadcast
+                    var result = await _txBroadcastService.Broadcast(request.OperationId, request.SignedTransaction);
+                    var resultJson = JsonConvert.SerializeObject(result);
+                    
+                    await _operationRepo.InsertAsync(new KeyValueEntity(RecordType.BroadcastedTransaction, request.OperationId.ToString(), resultJson));
+                    Response.StatusCode = (int) HttpStatusCode.OK;
+                }
             }
             catch (TransactionBroadcastException e)
             {
-                Response.StatusCode = 500;
+                Response.StatusCode = (int) HttpStatusCode.InternalServerError;
             }
 
+            // We don't have a way to easily map the errors from dcrd to
+            // amountIsTooSmall or notEnoughBalance
             return Json(new {
                 errorMessage = ""
             });
         }
 
-        [HttpGet("api/transactions/broadcast/{operationId}")]
-        public async Task<IActionResult> GetObservableOperation(Guid operationId)
-        {
-            throw new NotImplementedException();
-        }
-
         [HttpDelete("api/transactions/broadcast/{operationId}")]
         public async Task<IActionResult> RemoveObservableOperation(Guid operationId)
         {
-            throw new NotImplementedException();
+            var operation = await _operationRepo.GetAsync(RecordType.BroadcastedTransaction, operationId.ToString());
+            if (operation == null)
+                return NoContent();
+            
+            await _operationRepo.DeleteAsync(operation);
+            return Ok();
         }
                 
         [HttpPost("api/transactions/history/from/{address}/observation")]
@@ -146,6 +176,18 @@ namespace Lykke.Service.Decred.Api.Controllers
                 return new StatusCodeResult(409);
             }
         }
+                
+        [HttpGet("api/transactions/history/from/{address}")]
+        public async Task<IEnumerable<HistoricalTransactionContract>> GetTransactionsFromAddress(string address, int take, string afterHash = null)
+        {
+            return await _transactionHistoryService.GetTransactionsFromAddress(address, take, afterHash);
+        }
+        
+        [HttpGet("api/transactions/history/to/{address}")]
+        public async Task<IEnumerable<HistoricalTransactionContract>> GetTransactionsToAddress(string address, int take, string afterHash = null)
+        {
+            return await _transactionHistoryService.GetTransactionsToAddress(address, take, afterHash);
+        }
         
         [HttpDelete("api/transactions/history/from/{address}/observation")]
         public async Task<IActionResult> UnsubscribeFromAddressHistory(string address)
@@ -157,9 +199,7 @@ namespace Lykke.Service.Decred.Api.Controllers
             }
             catch (BusinessException e) when(e.Reason == ErrorReason.RecordNotFound)
             {
-                // TODO: Return expected error response.
-                Console.WriteLine(e);
-                throw;
+                return NoContent();
             }
         }
         
@@ -173,22 +213,10 @@ namespace Lykke.Service.Decred.Api.Controllers
             }
             catch (BusinessException e) when(e.Reason == ErrorReason.RecordNotFound)
             {
-                Console.WriteLine(e);
-                throw;
+                return NoContent();
             }
         }
-        
-        [HttpGet("api/transactions/history/from/{address}")]
-        public async Task<IEnumerable<HistoricalTransactionContract>> GetTransactionsFromAddress(string address, int take, string afterHash = null)
-        {
-            return await _transactionHistoryService.GetTransactionsFromAddress(address, take, afterHash);
-        }
-        
-        [HttpGet("api/transactions/history/to/{address}")]
-        public async Task<IEnumerable<HistoricalTransactionContract>> GetTransactionsToAddress(string address, int take, string afterHash = null)
-        {
-            return await _transactionHistoryService.GetTransactionsToAddress(address, take, afterHash);
-        }
+
 
         #region Not implemented endpoints
 

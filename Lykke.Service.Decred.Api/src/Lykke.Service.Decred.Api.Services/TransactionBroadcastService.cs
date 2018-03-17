@@ -1,33 +1,62 @@
 ﻿using System;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Decred.BlockExplorer;
+using Lykke.Service.BlockchainApi.Contract.Transactions;
+using NDecred.Common;
 using Newtonsoft.Json;
+using Org.BouncyCastle.Utilities.Encoders;
 
 namespace Lykke.Service.Decred.Api.Services
 {
     public interface ITransactionBroadcastService
     {
-        Task Broadcast(string hexTransaction);
+        Task<BroadcastedSingleTransactionResponse> Broadcast(Guid operationId, string hexTransaction);
     }
     
     public class TransactionBroadcastService : ITransactionBroadcastService
     {
         private readonly DcrdConfig _dcrdConfig;
+        private readonly IBlockRepository _blockRepository;
 
-        public TransactionBroadcastService(DcrdConfig dcrdConfig)
+        public TransactionBroadcastService(DcrdConfig dcrdConfig, IBlockRepository blockRepository)
         {
             _dcrdConfig = dcrdConfig;
+            _blockRepository = blockRepository;
         }
         
-        public async Task Broadcast(string hexTransaction)
-        {            
+        public async Task<BroadcastedSingleTransactionResponse> Broadcast(Guid operationId, string hexTransaction)
+        {
             var httpClient = new DcrdHttpClient(_dcrdConfig.DcrdApiUrl, _dcrdConfig.HttpClientHandler);
-            var result = await httpClient.BroadcastTransactionAsync(hexTransaction);
-            
+            var result = await httpClient.BroadcastTransactionAsync(hexTransaction);                
             if (result.Error != null)
                 throw new TransactionBroadcastException($"[{result.Error.Code}] {result.Error.Message}");
+            
+            var block = await _blockRepository.GetHighestBlock();
+            var transaction = new MsgTx();
+            transaction.Decode(HexUtil.ToByteArray(hexTransaction));
+
+            var txHash = HexUtil.FromByteArray(transaction.GetHash().Reverse().ToArray());
+
+            // Sum the values that are not change
+            var amount = transaction.TxOut.Sum(o => o.Value);
+            var fee = transaction.TxIn.Sum(i => i.ValueIn) - amount;
+
+            return new BroadcastedSingleTransactionResponse
+            {
+                Amount = amount.ToString(),
+                Fee = fee.ToString(),
+                Block = block.Height,
+                Error = "",
+                ErrorCode = null,
+                Hash = txHash,
+                OperationId = operationId,
+                State = BroadcastedTransactionState.InProgress,
+                Timestamp = DateTime.UtcNow
+            };
         }
     }
 
