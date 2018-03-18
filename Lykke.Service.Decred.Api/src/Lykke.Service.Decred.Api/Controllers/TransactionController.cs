@@ -2,6 +2,7 @@
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
+using Common.Log;
 using Lykke.Service.BlockchainApi.Contract.Common;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Lykke.Service.Decred.Api.Common;
@@ -16,13 +17,16 @@ namespace Lykke.Service.Decred.Api.Controllers
 {
     public class TransactionController : Controller
     {
-        private readonly UnsignedTransactionService _txBuilderService;
+        private readonly ILog _log;
+        private readonly IUnsignedTransactionService _txBuilderService;
         private readonly ITransactionBroadcastService _txBroadcastService;
 
         public TransactionController(
-            UnsignedTransactionService txBuilderService,
+            ILog log,
+            IUnsignedTransactionService txBuilderService,
             ITransactionBroadcastService txBroadcastService)
         {
+            _log = log;
             _txBuilderService = txBuilderService;
             _txBroadcastService = txBroadcastService;
         }
@@ -89,7 +93,8 @@ namespace Lykke.Service.Decred.Api.Controllers
             }
             catch (TransactionBroadcastException e)
             {
-                // Any other errors
+                // Log actual error message from broadcast service
+                await _log.WriteErrorAsync(nameof(TransactionController), nameof(Broadcast), request.OperationId.ToString(), e);
                 Response.StatusCode = (int) HttpStatusCode.InternalServerError;
             }
 
@@ -156,13 +161,13 @@ namespace Lykke.Service.Decred.Api.Controllers
         }
 
         [HttpGet("api/transactions/broadcast/many-inputs/{operationId}")]
-        public async Task<IActionResult> GetBroadcastedManyInputsTx(Guid operationId)
+        public IActionResult GetBroadcastedManyInputsTx(Guid operationId)
         {
             return StatusCode((int) HttpStatusCode.NotImplemented);
         }
         
         [HttpGet("api/transactions/broadcast/many-outputs/{operationId}")]
-        public async Task<IActionResult> GetBroadcastedManyOutputsTx(Guid operationId)
+        public IActionResult GetBroadcastedManyOutputsTx(Guid operationId)
         {
             return StatusCode((int) HttpStatusCode.NotImplemented);
         }

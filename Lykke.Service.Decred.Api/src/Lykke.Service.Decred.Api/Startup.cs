@@ -7,12 +7,15 @@ using AzureStorage.Tables;
 using Common.Log;
 using Decred.BlockExplorer;
 using Decred.Common.Client;
+using Lykke.Common.ApiLibrary.Middleware;
+using Lykke.Logs;
 using Lykke.Service.Decred.Api.Common;
 using Lykke.Service.Decred.Api.Common.Entity;
 using Lykke.Service.Decred.Api.Middleware;
 using Lykke.Service.Decred.Api.Repository;
 using Lykke.Service.Decred.Api.Services;
 using Lykke.SettingsReader;
+using Lykke.SlackNotification.AzureQueue;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -25,7 +28,7 @@ namespace Lykke.Service.Decred.Api
 {
     public class Startup
     {
-        private readonly ILog _log;
+        private ILog _log;
         public IConfiguration Configuration { get; }
         public IHostingEnvironment Environment { get; }
 
@@ -57,19 +60,24 @@ namespace Lykke.Service.Decred.Api
             var appSettings = Configuration.Get<AppSettings>();
 
             // Register network dependency
-            services.AddTransient(p => Network.ByName(appSettings.Network));
-            
+            services.AddTransient(p => Network.ByName(appSettings.ServiceSettings.NetworkName));
             services.AddTransient<IDcrdClient, DcrdHttpClient>(s => 
                 new DcrdHttpClient(
-                    appSettings.DcrdApiUrl,
+                    appSettings.ServiceSettings.Dcrd.RpcEndpoint,
                     new HttpClientHandler
                     {
-                        Credentials = new NetworkCredential(appSettings.DcrdRpcUser, appSettings.DcrdRpcPass),
+                        Credentials = new NetworkCredential(
+                            appSettings.ServiceSettings.Dcrd.RpcUser,
+                            appSettings.ServiceSettings.Dcrd.RpcPass),
                     }));
             
+            _log = CreateLogWithSlack(services, Configuration.LoadSettings<AppSettings>());
+            
+            services.AddSingleton(p => _log);
             services.AddTransient<HttpClient>();
             services.AddTransient<TransactionHistoryService>();
-            services.AddTransient<UnsignedTransactionService>();
+            services.AddTransient<ITransactionBuilder, TransactionBuilder>();
+            services.AddTransient<IUnsignedTransactionService, UnsignedTransactionService>();
             services.AddTransient<ITransactionFeeService, TransactionFeeService>();
             services.AddTransient<ITransactionBroadcastService, TransactionBroadcastService>();
             services.AddTransient<IAddressValidationService, AddressValidationService>();
@@ -135,7 +143,7 @@ namespace Lykke.Service.Decred.Api
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IHostingEnvironment env)
+        public void Configure(IApplicationBuilder app, IHostingEnvironment env, IApplicationLifetime appLifetime)
         {
             if (env.IsDevelopment())
             {
@@ -143,7 +151,74 @@ namespace Lykke.Service.Decred.Api
             }
 
             app.UseMiddleware(typeof(ApiErrorHandler));
+            app.UseLykkeForwardedHeaders();
+            app.UseLykkeMiddleware("LykkeService", ex => new { Message = "Technical problem" });
+
             app.UseMvc();
+            
+            appLifetime.ApplicationStarted.Register(() => StartApplication().GetAwaiter().GetResult());
+            appLifetime.ApplicationStopping.Register(() => StopApplication().GetAwaiter().GetResult());
+            appLifetime.ApplicationStopped.Register(() => CleanUp().GetAwaiter().GetResult());
+        }
+        
+        private async Task StartApplication()
+        {
+            await _log.WriteMonitorAsync("", $"Env: {Program.EnvInfo}", "Started");
+        }
+
+        private async Task StopApplication()
+        {
+            await _log.WriteMonitorAsync("", $"Env: {Program.EnvInfo}", "Stopped");
+        }
+
+        private async Task CleanUp()
+        {
+            await _log.WriteMonitorAsync("", $"Env: {Program.EnvInfo}", "Terminating");
+        }
+
+        private static ILog CreateLogWithSlack(IServiceCollection services, IReloadingManager<AppSettings> settings)
+        {
+            var consoleLogger = new LogToConsole();
+            var aggregateLogger = new AggregateLogger();
+
+            aggregateLogger.AddLog(consoleLogger);
+
+            var dbLogConnectionStringManager = settings.Nested(x => x.ServiceSettings.Db.LogsConnString);
+            var dbLogConnectionString = dbLogConnectionStringManager.CurrentValue;
+
+            if (string.IsNullOrEmpty(dbLogConnectionString))
+            {
+                consoleLogger.WriteWarningAsync(nameof(Startup), nameof(CreateLogWithSlack), "Table loggger is not inited").Wait();
+                return aggregateLogger;
+            }
+
+            if (dbLogConnectionString.StartsWith("${") && dbLogConnectionString.EndsWith("}"))
+                throw new InvalidOperationException($"LogsConnString {dbLogConnectionString} is not filled in settings");
+
+            var persistenceManager = new LykkeLogToAzureStoragePersistenceManager(
+                AzureTableStorage<LogEntity>.Create(dbLogConnectionStringManager, "LykkeServiceLog", consoleLogger),
+                consoleLogger);
+
+            // Creating slack notification service, which logs own azure queue processing messages to aggregate log
+            var slackService = services.UseSlackNotificationsSenderViaAzureQueue(new AzureQueueIntegration.AzureQueueSettings
+            {
+                ConnectionString = settings.CurrentValue.SlackNotifications.AzureQueue.ConnectionString,
+                QueueName = settings.CurrentValue.SlackNotifications.AzureQueue.QueueName
+            }, aggregateLogger);
+
+            var slackNotificationsManager = new LykkeLogToAzureSlackNotificationsManager(slackService, consoleLogger);
+
+            // Creating azure storage logger, which logs own messages to concole log
+            var azureStorageLogger = new LykkeLogToAzureStorage(
+                persistenceManager,
+                slackNotificationsManager,
+                consoleLogger);
+
+            azureStorageLogger.Start();
+
+            aggregateLogger.AddLog(azureStorageLogger);
+
+            return aggregateLogger;
         }
     }
 }
