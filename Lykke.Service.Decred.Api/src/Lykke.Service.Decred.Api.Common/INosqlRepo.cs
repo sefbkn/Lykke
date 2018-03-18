@@ -1,13 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Threading.Tasks;
 
-namespace Lykke.Service.Decred.Api.Repository
+namespace Lykke.Service.Decred.Api.Common
 {
     /// <summary>
     /// Wraps all observable repositories.
     /// </summary>
     /// <typeparam name="T"></typeparam>
-    public interface IObservableOperationRepository<T>
+    public interface INosqlRepo<T>
     {
         Task<T> GetAsync(string key);
         Task<IEnumerable<T>> GetAsync(IEnumerable<string> keys);

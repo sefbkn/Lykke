@@ -12,7 +12,14 @@ using Paymetheus.Decred.Wallet;
 
 namespace Lykke.Service.Decred.Api.Services
 {
-    public class TransactionBuilder
+    public interface ITransactionBuilder
+    {
+        Task<BuildTransactionResponse> BuildSingleTransactionAsync(
+            BuildSingleTransactionRequest request,
+            decimal feeFactor);
+    }
+    
+    public class TransactionBuilder : ITransactionBuilder
     {
         private readonly ITransactionFeeService _feeService;
         private readonly ITransactionRepository _txRepo;

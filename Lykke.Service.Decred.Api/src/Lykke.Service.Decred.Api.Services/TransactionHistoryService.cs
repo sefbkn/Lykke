@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Decred.BlockExplorer;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
+using Lykke.Service.Decred.Api.Common;
 using Lykke.Service.Decred.Api.Common.Entity;
 using Lykke.Service.Decred.Api.Repository;
 using NDecred.Common;
@@ -14,13 +15,13 @@ namespace Lykke.Service.Decred.Api.Services
     public class TransactionHistoryService
     {
         private readonly ITransactionRepository _txRepo;
-        private readonly IObservableOperationRepository<BroadcastedTransactionByHash> _broadcastTxHashRepo;
-        private readonly IObservableOperationRepository<ObservableAddressEntity> _operationRepo;
+        private readonly INosqlRepo<BroadcastedTransactionByHash> _broadcastTxHashRepo;
+        private readonly INosqlRepo<ObservableAddressEntity> _operationRepo;
 
         public TransactionHistoryService(
             ITransactionRepository txRepo,
-            IObservableOperationRepository<BroadcastedTransactionByHash> broadcastTxHashRepo,
-            IObservableOperationRepository<ObservableAddressEntity> operationRepo)
+            INosqlRepo<BroadcastedTransactionByHash> broadcastTxHashRepo,
+            INosqlRepo<ObservableAddressEntity> operationRepo)
         {
             _txRepo = txRepo;
             _broadcastTxHashRepo = broadcastTxHashRepo;
