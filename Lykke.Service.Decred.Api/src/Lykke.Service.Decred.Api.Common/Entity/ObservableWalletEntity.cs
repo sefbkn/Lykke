@@ -1,6 +1,6 @@
 ﻿using Microsoft.WindowsAzure.Storage.Table;
 
-namespace Lykke.Service.Decred.Api.Services
+namespace Lykke.Service.Decred.Api.Common.Entity
 {
     /// <summary>
     /// Represents a wallet that may be watched for balance changes.

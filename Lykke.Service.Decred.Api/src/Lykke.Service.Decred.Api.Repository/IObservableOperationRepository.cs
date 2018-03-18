@@ -9,8 +9,9 @@ namespace Lykke.Service.Decred.Api.Repository
     /// <typeparam name="T"></typeparam>
     public interface IObservableOperationRepository<T>
     {
-        Task<T> GetAsync(string partition, string key);
-        Task<bool> ExistsAsync(string partition, string key);
+        Task<T> GetAsync(string key);
+        Task<IEnumerable<T>> GetAsync(IEnumerable<string> keys);
+        
         Task InsertAsync(T entity);
         Task DeleteAsync(T entity);
         Task<(IEnumerable<T> Entities, string ContinuationToken)> GetDataWithContinuationTokenAsync(int take, string continuation);

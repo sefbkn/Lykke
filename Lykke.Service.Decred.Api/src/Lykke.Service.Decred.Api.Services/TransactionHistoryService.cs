@@ -1,59 +1,29 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Decred.BlockExplorer;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
+using Lykke.Service.Decred.Api.Common.Entity;
 using Lykke.Service.Decred.Api.Repository;
-using Microsoft.WindowsAzure.Storage.Table;
+using NDecred.Common;
+using Newtonsoft.Json;
 
 namespace Lykke.Service.Decred.Api.Services
 {
-    public enum TxDirection
-    {
-        Incoming = 0,
-        Outgoing = 1
-    }
-
-    public class ObservableAddressActivityEntity : TableEntity
-    {
-        private string _address;
-
-        public ObservableAddressActivityEntity()
-        {
-            PartitionKey = "ByDirectedAddress";
-        }
-        
-        public ObservableAddressActivityEntity(string address, TxDirection direction) : this()
-        {
-            Address = address;
-            TxDirection = direction;
-        }
-
-        public string Address
-        {
-            get { return _address; }
-            set { _address = value;
-                RowKey = value;
-            }
-        }
-
-        public TxDirection TxDirection { get; set; }
-        public string DirectedAddress {
-            get { return Address + TxDirection; }
-            set {  }
-        }
-    }
-    
     public class TransactionHistoryService
     {
         private readonly ITransactionRepository _txRepo;
-        private readonly IObservableOperationRepository<ObservableAddressActivityEntity> _operationRepo;
+        private readonly IObservableOperationRepository<BroadcastedTransactionByHash> _broadcastTxHashRepo;
+        private readonly IObservableOperationRepository<ObservableAddressEntity> _operationRepo;
 
         public TransactionHistoryService(
             ITransactionRepository txRepo,
-            IObservableOperationRepository<ObservableAddressActivityEntity> operationRepo)
+            IObservableOperationRepository<BroadcastedTransactionByHash> broadcastTxHashRepo,
+            IObservableOperationRepository<ObservableAddressEntity> operationRepo)
         {
             _txRepo = txRepo;
+            _broadcastTxHashRepo = broadcastTxHashRepo;
             _operationRepo = operationRepo;
         }
         
@@ -65,7 +35,7 @@ namespace Lykke.Service.Decred.Api.Services
         /// <returns></returns>
         public async Task SubscribeAddressFrom(string address)
         {
-            var entity = new ObservableAddressActivityEntity(address, TxDirection.Outgoing);
+            var entity = new ObservableAddressEntity(address, TxDirection.Outgoing);
             await _operationRepo.InsertAsync(entity);
         }
 
@@ -77,7 +47,7 @@ namespace Lykke.Service.Decred.Api.Services
         /// <returns></returns>
         public async Task SubscribeAddressTo(string address)
         {
-            var entity = new ObservableAddressActivityEntity(address, TxDirection.Incoming);
+            var entity = new ObservableAddressEntity(address, TxDirection.Incoming);
             await _operationRepo.InsertAsync(entity);
         }
         
@@ -90,7 +60,7 @@ namespace Lykke.Service.Decred.Api.Services
         /// <returns></returns>
         public async Task UnsubscribeAddressFromHistory(string address)
         {
-            var entity = new ObservableAddressActivityEntity(address, TxDirection.Outgoing);
+            var entity = new ObservableAddressEntity(address, TxDirection.Outgoing);
             await _operationRepo.DeleteAsync(entity);
         }
         
@@ -101,12 +71,12 @@ namespace Lykke.Service.Decred.Api.Services
         /// <returns></returns>
         public async Task UnsubscribeAddressToHistory(string address)
         {
-            var entity = new ObservableAddressActivityEntity(address, TxDirection.Incoming);
+            var entity = new ObservableAddressEntity(address, TxDirection.Incoming);
             await _operationRepo.DeleteAsync(entity);
         }
-        
+
         /// <summary>
-        /// Finds known transactions for a particular address occuring after the transaction with the given hash
+        /// Finds known transactions from a particular address occuring after the transaction with the given hash
         /// 
         /// If afterHash is null, the earliest known transaction for the given address is returned first.
         /// </summary>
@@ -116,44 +86,48 @@ namespace Lykke.Service.Decred.Api.Services
         /// <returns></returns>
         public async Task<HistoricalTransactionContract[]> GetTransactionsFromAddress(string address, int take, string afterHash)
         {
-            var results = await _txRepo.GetTransactionsFromAddress(address, take, afterHash);
-            return results.Select(r => new HistoricalTransactionContract
-            {
-                Amount = r.Amount,
-                AssetId = "DCR",
-                FromAddress = r.FromAddress,
-                ToAddress = r.ToAddress,
-                Hash = r.Hash,
-                
-                // TODO: Fill these values in
-                
-                // If the transaction was broadcast using the Lykke decred service, log the operation id.
-                OperationId = Guid.Empty,
-                // Timestamp that the transaction occurred.
-                Timestamp = DateTime.MinValue
-            }).ToArray();
-            // Match up transactions that have an operation id...
+            var transactions = await _txRepo.GetTransactionsFromAddress(address, take, afterHash);
+            return await GetHistoricalTransactionContracts(transactions);
         }
-        
+
         public async Task<HistoricalTransactionContract[]> GetTransactionsToAddress(string address, int take, string afterHash = null)
         {
-            var results = await _txRepo.GetTransactionsFromAddress(address, take, afterHash);
-            
-            return results.Select(r => new HistoricalTransactionContract
+            var transactions = await _txRepo.GetTransactionsToAddress(address, take, afterHash);
+            return await GetHistoricalTransactionContracts(transactions);
+        }
+        
+        private async Task<HistoricalTransactionContract[]> GetHistoricalTransactionContracts(TxHistoryResult[] transactions)
+        {
+            var operationIdLookup = await BuildOperationIdLookup(transactions);
+            return transactions.Select(tx => new HistoricalTransactionContract
             {
-                Amount = r.Amount,
+                Amount = tx.Amount,
                 AssetId = "DCR",
-                FromAddress = r.FromAddress,
-                ToAddress = r.ToAddress,
-                Hash = r.Hash,
-                
-                // TODO: Fill these values in 
-                
-                // If the transaction was broadcast using the Lykke decred service, log the operation id.
-                OperationId = Guid.Empty,
-                // Timestamp that the transaction occurred.
-                Timestamp = DateTime.MinValue
+                FromAddress = tx.FromAddress,
+                ToAddress = tx.ToAddress,
+                Hash = tx.Hash,
+                Timestamp = DateTimeUtil.FromUnixTime(tx.BlockTime),
+                // Match up transactions that have an operation id
+                // from a previously broadcast transaction.
+                OperationId = operationIdLookup.ContainsKey(tx.Hash) ? operationIdLookup[tx.Hash] : Guid.Empty,
             }).ToArray();
+        }
+
+        /// <summary>
+        /// Creates a dictionary of transaction hashes to lykke operation ids.
+        /// 
+        /// Searches for transaction hashes that were broadcast, and retrieves the respective hash value.
+        /// </summary>
+        /// <param name="transactions"></param>
+        /// <returns></returns>
+        private async Task<Dictionary<string, Guid>> BuildOperationIdLookup(IEnumerable<TxHistoryResult> transactions)
+        {
+            // Lookup hashes for operation id
+            var txHashes = transactions.Select(r => r.Hash);
+
+            // Check to see if the hash has been broadcast.  Hash is the row key.
+            var broadcastedTxHashes = await _broadcastTxHashRepo.GetAsync(txHashes);            
+            return broadcastedTxHashes.ToDictionary(p => p.Hash, p => p.OperationId);
         }
     }
 }

@@ -6,6 +6,8 @@ using System.Threading.Tasks;
 using AzureStorage.Tables;
 using Common.Log;
 using Decred.BlockExplorer;
+using Decred.Common.Client;
+using Lykke.Service.Decred.Api.Common.Entity;
 using Lykke.Service.Decred.Api.Middleware;
 using Lykke.Service.Decred.Api.Repository;
 using Lykke.Service.Decred.Api.Services;
@@ -55,18 +57,18 @@ namespace Lykke.Service.Decred.Api
 
             // Register network dependency
             services.AddTransient(p => Network.ByName(appSettings.Network));
-            services.AddTransient(p => new DcrdConfig
-            {
-                DcrdApiUrl = appSettings.DcrdApiUrl,
-                HttpClientHandler = new HttpClientHandler
-                {
-                    Credentials = new NetworkCredential(appSettings.DcrdRpcUser, appSettings.DcrdRpcPass),
-                }
-            });
+            
+            services.AddTransient<IDcrdClient, DcrdHttpClient>(s => 
+                new DcrdHttpClient(
+                    appSettings.DcrdApiUrl,
+                    new HttpClientHandler
+                    {
+                        Credentials = new NetworkCredential(appSettings.DcrdRpcUser, appSettings.DcrdRpcPass),
+                    }));
             
             services.AddTransient<HttpClient>();
             services.AddTransient<TransactionHistoryService>();
-            services.AddTransient<TransactionBuilderService>();
+            services.AddTransient<UnsignedTransactionService>();
             services.AddTransient<ITransactionFeeService, TransactionFeeService>();
             services.AddTransient<ITransactionBroadcastService, TransactionBroadcastService>();
             services.AddTransient<IAddressValidationService, AddressValidationService>();
@@ -82,15 +84,33 @@ namespace Lykke.Service.Decred.Api
             var connectionString = settings.ConnectionString(a => Configuration.GetConnectionString("azure"));
             
             services.AddTransient
-               <IObservableOperationRepository<ObservableWalletEntity>, AzureObservableOperationRepository<ObservableWalletEntity>>(e => 
-                    new AzureObservableOperationRepository<ObservableWalletEntity>(
+               <IObservableOperationRepository<ObservableWalletEntity>, AzureRepo<ObservableWalletEntity>>(e => 
+                    new AzureRepo<ObservableWalletEntity>(
                         AzureTableStorage<ObservableWalletEntity>.Create(connectionString, "ObservableWallet", consoleLogger)
                     ));
             
             services.AddTransient
-                <IObservableOperationRepository<ObservableAddressActivityEntity>, AzureObservableOperationRepository<ObservableAddressActivityEntity>>(e => 
-                    new AzureObservableOperationRepository<ObservableAddressActivityEntity>(
-                        AzureTableStorage<ObservableAddressActivityEntity>.Create(connectionString, "ObservableAddress", consoleLogger)
+                <IObservableOperationRepository<ObservableAddressEntity>, AzureRepo<ObservableAddressEntity>>(e => 
+                    new AzureRepo<ObservableAddressEntity>(
+                        AzureTableStorage<ObservableAddressEntity>.Create(connectionString, "ObservableAddress", consoleLogger)
+                    ));
+
+            services.AddTransient
+                <IObservableOperationRepository<UnsignedTransactionEntity>, AzureRepo<UnsignedTransactionEntity>>(e => 
+                    new AzureRepo<UnsignedTransactionEntity>(
+                        AzureTableStorage<UnsignedTransactionEntity>.Create(connectionString, "UnsignedTransactionEntity", consoleLogger)
+                    ));
+
+            services.AddTransient
+                <IObservableOperationRepository<BroadcastedTransactionByHash>, AzureRepo<BroadcastedTransactionByHash>>(e => 
+                    new AzureRepo<BroadcastedTransactionByHash>(
+                        AzureTableStorage<BroadcastedTransactionByHash>.Create(connectionString, "BroadcastedTransactionByHash", consoleLogger)
+                    ));
+
+            services.AddTransient
+                <IObservableOperationRepository<BroadcastedTransaction>, AzureRepo<BroadcastedTransaction>>(e => 
+                    new AzureRepo<BroadcastedTransaction>(
+                        AzureTableStorage<BroadcastedTransaction>.Create(connectionString, "BroadcastedTransaction", consoleLogger)
                     ));
 
             // Write up dcrdata postgres client to monitor transactions and balances.

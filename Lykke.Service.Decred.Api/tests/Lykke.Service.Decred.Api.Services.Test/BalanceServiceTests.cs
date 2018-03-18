@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Decred.BlockExplorer;
+using Lykke.Service.Decred.Api.Common.Entity;
 using Lykke.Service.Decred.Api.Repository;
 using Moq;
 using Xunit;

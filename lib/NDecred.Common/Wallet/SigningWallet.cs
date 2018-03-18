@@ -65,7 +65,7 @@ namespace NDecred.Common.Wallet
                 foreach (var txCopyIn in txCopy.TxIn)
                 {
                     // Skip the current TxIn
-                    if (Enumerable.SequenceEqual<byte>(input.PreviousOutPoint.Hash, txCopyIn.PreviousOutPoint.Hash) &&
+                    if (input.PreviousOutPoint.Hash.SequenceEqual<byte>(txCopyIn.PreviousOutPoint.Hash) &&
                         input.PreviousOutPoint.Index == txCopyIn.PreviousOutPoint.Index) continue;
                     
                     txCopyIn.SignatureScript = new byte[0];                  
