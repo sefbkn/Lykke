@@ -11,6 +11,7 @@ using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Logs;
 using Lykke.Service.Decred.Api.Common;
 using Lykke.Service.Decred.Api.Common.Entity;
+using Lykke.Service.Decred.Api.Common.Services;
 using Lykke.Service.Decred.Api.Middleware;
 using Lykke.Service.Decred.Api.Repository;
 using Lykke.Service.Decred.Api.Services;
@@ -76,6 +77,7 @@ namespace Lykke.Service.Decred.Api
             services.AddSingleton(p => _log);
             services.AddTransient<HttpClient>();
             services.AddTransient<TransactionHistoryService>();
+            services.AddTransient<IHealthService, HealthService>();
             services.AddTransient<ITransactionBuilder, TransactionBuilder>();
             services.AddTransient<IUnsignedTransactionService, UnsignedTransactionService>();
             services.AddTransient<ITransactionFeeService, TransactionFeeService>();
