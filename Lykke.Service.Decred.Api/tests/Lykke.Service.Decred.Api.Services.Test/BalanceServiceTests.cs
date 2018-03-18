@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Decred.BlockExplorer;
+using Lykke.Service.Decred.Api.Common;
 using Lykke.Service.Decred.Api.Common.Entity;
 using Lykke.Service.Decred.Api.Repository;
 using Moq;
@@ -12,14 +13,14 @@ namespace Lykke.Service.Decred.Api.Services.Test
         private static Mock<IBlockRepository> _mockBlockRepo;
         private static Mock<IAddressValidationService> _mockAddressValidator;
         private static Mock<IAddressRepository> _addressBalanceRepository;
-        private static Mock<IObservableOperationRepository<ObservableWalletEntity>> _mockOperationRepo;
+        private static Mock<INosqlRepo<ObservableWalletEntity>> _mockOperationRepo;
         
         public BalanceServiceTests()
         {
             _mockBlockRepo = new Mock<IBlockRepository>();
             _mockAddressValidator = new Mock<IAddressValidationService>();
             _addressBalanceRepository = new Mock<IAddressRepository>();
-            _mockOperationRepo = new Mock<IObservableOperationRepository<ObservableWalletEntity>>();
+            _mockOperationRepo = new Mock<INosqlRepo<ObservableWalletEntity>>();
         }
         
         [Fact]

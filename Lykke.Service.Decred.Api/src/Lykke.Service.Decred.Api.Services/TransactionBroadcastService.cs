@@ -26,15 +26,15 @@ namespace Lykke.Service.Decred.Api.Services
         private readonly IBlockRepository _blockRepository;
         private readonly ITransactionRepository _txRepo;
         
-        private readonly IObservableOperationRepository<BroadcastedTransaction> _broadcastTxRepo;
-        private readonly IObservableOperationRepository<BroadcastedTransactionByHash> _broadcastTxHashRepo;
+        private readonly INosqlRepo<BroadcastedTransaction> _broadcastTxRepo;
+        private readonly INosqlRepo<BroadcastedTransactionByHash> _broadcastTxHashRepo;
 
         public TransactionBroadcastService(
             IDcrdClient dcrdClient, 
             IBlockRepository blockRepository,
             ITransactionRepository txRepo,
-            IObservableOperationRepository<BroadcastedTransaction> broadcastTxRepo,
-            IObservableOperationRepository<BroadcastedTransactionByHash> broadcastTxHashRepo)
+            INosqlRepo<BroadcastedTransaction> broadcastTxRepo,
+            INosqlRepo<BroadcastedTransactionByHash> broadcastTxHashRepo)
         {
             _dcrdClient = dcrdClient;
             _blockRepository = blockRepository;

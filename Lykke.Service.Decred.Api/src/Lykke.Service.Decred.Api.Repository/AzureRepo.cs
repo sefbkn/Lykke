@@ -8,7 +8,7 @@ using Microsoft.WindowsAzure.Storage.Table;
 
 namespace Lykke.Service.Decred.Api.Repository
 {
-    public class AzureRepo<T> : IObservableOperationRepository<T> where T : TableEntity, new()
+    public class AzureRepo<T> : INosqlRepo<T> where T : TableEntity, new()
     {
         private const int RecordNotFoundStatus = 404;
         private const int DuplicateRecordStatus = 409;

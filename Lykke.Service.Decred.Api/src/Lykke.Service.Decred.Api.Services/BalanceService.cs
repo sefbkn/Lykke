@@ -11,13 +11,13 @@ namespace Lykke.Service.Decred.Api.Services
 {    
     public class BalanceService
     {        
-        private readonly IObservableOperationRepository<ObservableWalletEntity> _observableWalletRepository;
+        private readonly INosqlRepo<ObservableWalletEntity> _observableWalletRepository;
         private readonly IAddressRepository _addressRepository;
         private readonly IBlockRepository _blockRepository;
         private readonly IAddressValidationService _addressValidator;
 
         public BalanceService(
-            IObservableOperationRepository<ObservableWalletEntity> observableWalletRepository,
+            INosqlRepo<ObservableWalletEntity> observableWalletRepository,
             IAddressRepository addressRepository,
             IBlockRepository blockRepository,
             IAddressValidationService addressValidator)

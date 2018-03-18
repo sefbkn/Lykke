@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
+using Lykke.Service.Decred.Api.Common;
 using Lykke.Service.Decred.Api.Common.Entity;
 using Lykke.Service.Decred.Api.Repository;
 using Newtonsoft.Json;
@@ -9,11 +10,11 @@ namespace Lykke.Service.Decred.Api.Services
     public class UnsignedTransactionService
     {
         private readonly TransactionBuilder _builder;
-        private readonly IObservableOperationRepository<UnsignedTransactionEntity> _unsignedTxRepo;
+        private readonly INosqlRepo<UnsignedTransactionEntity> _unsignedTxRepo;
 
         public UnsignedTransactionService(
             TransactionBuilder builder,
-            IObservableOperationRepository<UnsignedTransactionEntity> unsignedTxRepo)
+            INosqlRepo<UnsignedTransactionEntity> unsignedTxRepo)
         {
             _builder = builder;
             _unsignedTxRepo = unsignedTxRepo;
