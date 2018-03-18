@@ -6,5 +6,8 @@
         public string ToAddress { get; set; }
         public string Amount { get; set; }
         public string Hash { get; set; }
+        
+        public long BlockHeight { get; set; }
+        public long BlockTime { get; set; }
     }
 }

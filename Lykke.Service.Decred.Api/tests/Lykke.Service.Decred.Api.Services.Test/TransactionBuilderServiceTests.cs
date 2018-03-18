@@ -9,12 +9,12 @@ using Xunit;
 
 namespace Lykke.Service.Decred.Api.Services.Test
 {
-    public class TransactionBuilderServiceTests
+    public class TransactionBuilderTests
     {
         private readonly Mock<ITransactionFeeService> _mockFeeService;
         private readonly Mock<ITransactionRepository> _mockTxRepo;
         
-        public TransactionBuilderServiceTests()
+        public TransactionBuilderTests()
         {
             _mockFeeService = new Mock<ITransactionFeeService>();
             _mockTxRepo = new Mock<ITransactionRepository>();
@@ -43,7 +43,7 @@ namespace Lykke.Service.Decred.Api.Services.Test
             _mockFeeService.Setup(m => m.CalculateFee(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<decimal>()))
                 .Returns(1);
             
-            var subject = new TransactionBuilderService(
+            var subject = new TransactionBuilder(
                 _mockFeeService.Object,
                 _mockTxRepo.Object);
             

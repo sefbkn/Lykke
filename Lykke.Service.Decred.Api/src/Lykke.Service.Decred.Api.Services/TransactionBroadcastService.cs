@@ -1,123 +1,153 @@
 ﻿using System;
 using System.Linq;
-using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
 using Decred.BlockExplorer;
+using Decred.Common.Client;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
+using Lykke.Service.Decred.Api.Common;
+using Lykke.Service.Decred.Api.Common.Entity;
+using Lykke.Service.Decred.Api.Repository;
 using NDecred.Common;
 using Newtonsoft.Json;
-using Org.BouncyCastle.Utilities.Encoders;
 
 namespace Lykke.Service.Decred.Api.Services
 {
     public interface ITransactionBroadcastService
     {
-        Task<BroadcastedSingleTransactionResponse> Broadcast(Guid operationId, string hexTransaction);
+        Task Broadcast(Guid operationId, string hexTransaction);
+        Task UnsubscribeBroadcastedTx(Guid operationId);
+        Task<BroadcastedSingleTransactionResponse> GetBroadcastedTxSingle(Guid operationId);
     }
     
     public class TransactionBroadcastService : ITransactionBroadcastService
     {
-        private readonly DcrdConfig _dcrdConfig;
+        private readonly IDcrdClient _dcrdClient;
         private readonly IBlockRepository _blockRepository;
+        private readonly ITransactionRepository _txRepo;
+        
+        private readonly IObservableOperationRepository<BroadcastedTransaction> _broadcastTxRepo;
+        private readonly IObservableOperationRepository<BroadcastedTransactionByHash> _broadcastTxHashRepo;
 
-        public TransactionBroadcastService(DcrdConfig dcrdConfig, IBlockRepository blockRepository)
+        public TransactionBroadcastService(
+            IDcrdClient dcrdClient, 
+            IBlockRepository blockRepository,
+            ITransactionRepository txRepo,
+            IObservableOperationRepository<BroadcastedTransaction> broadcastTxRepo,
+            IObservableOperationRepository<BroadcastedTransactionByHash> broadcastTxHashRepo)
         {
-            _dcrdConfig = dcrdConfig;
+            _dcrdClient = dcrdClient;
             _blockRepository = blockRepository;
+            _txRepo = txRepo;
+            _broadcastTxRepo = broadcastTxRepo;
+            _broadcastTxHashRepo = broadcastTxHashRepo;
         }
         
-        public async Task<BroadcastedSingleTransactionResponse> Broadcast(Guid operationId, string hexTransaction)
+        /// <summary>
+        /// Broadcasts a signed transaction to the Decred network
+        /// </summary>
+        /// <param name="operationId"></param>
+        /// <param name="hexTransaction"></param>
+        /// <returns></returns>
+        /// <exception cref="TransactionBroadcastException"></exception>
+        public async Task Broadcast(Guid operationId, string hexTransaction)
         {
-            var httpClient = new DcrdHttpClient(_dcrdConfig.DcrdApiUrl, _dcrdConfig.HttpClientHandler);
-            var result = await httpClient.BroadcastTransactionAsync(hexTransaction);                
+            // If the operation exists in the cache, throw exception
+            var cachedResult = await _broadcastTxRepo.GetAsync(operationId.ToString());
+            if (cachedResult != null)
+                throw new BusinessException(ErrorReason.DuplicateRecord);
+
+            // Submit the transaction to the network via dcrd
+            var result = await _dcrdClient.SendRawTransactionAsync(hexTransaction);                
             if (result.Error != null)
                 throw new TransactionBroadcastException($"[{result.Error.Code}] {result.Error.Message}");
             
-            var block = await _blockRepository.GetHighestBlock();
+            // Calculate the hash to perform lookups with later. 
             var transaction = new MsgTx();
             transaction.Decode(HexUtil.ToByteArray(hexTransaction));
-
             var txHash = HexUtil.FromByteArray(transaction.GetHash().Reverse().ToArray());
-
-            // Sum the values that are not change
-            var amount = transaction.TxOut.Sum(o => o.Value);
-            var fee = transaction.TxIn.Sum(i => i.ValueIn) - amount;
-
-            return new BroadcastedSingleTransactionResponse
+            
+            await SaveBroadcastedTransaction(new BroadcastedTransaction
             {
-                Amount = amount.ToString(),
-                Fee = fee.ToString(),
-                Block = block.Height,
-                Error = "",
-                ErrorCode = null,
-                Hash = txHash,
                 OperationId = operationId,
-                State = BroadcastedTransactionState.InProgress,
-                Timestamp = DateTime.UtcNow
-            };
-        }
-    }
-
-    public class TransactionBroadcastException : Exception
-    {
-        public TransactionBroadcastException(string message = null, Exception innerException = null) 
-            : base(message, innerException)
-        {
-        }
-    }
-
-    public class DcrdConfig
-    {
-        public string DcrdApiUrl { get; set; }
-        public HttpClientHandler HttpClientHandler { get; set; }
-    }
-    
-    public class DcrdHttpClient
-    {
-        private readonly string _apiUrl;
-        private readonly HttpClientHandler _httpClientHandler;
-
-        public DcrdHttpClient(string apiUrl, HttpClientHandler httpClientHandler)
-        {
-            _apiUrl = apiUrl;
-            _httpClientHandler = httpClientHandler;
-        }
-
-        public async Task<JsonRpcResponse> BroadcastTransactionAsync(string hexTransaction)
-        {
-            using (var httpClient = new HttpClient(_httpClientHandler))
-            {
-                var request = new
-                {
-                    jsonrpc = "1.0",
-                    id = "0",
-                    method = "sendrawtransaction",
-                    @params = new[]{ hexTransaction }
-                };
-                
-                var content = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
-                var response = await httpClient.PostAsync(_apiUrl, content);
-
-                var responseString = await response.Content.ReadAsStringAsync();
-                var responseObject = JsonConvert.DeserializeObject<JsonRpcResponse>(responseString);
-                return responseObject;
-            }
+                Hash = txHash,
+                EncodedTransaction = hexTransaction
+            });
+            
         }
         
-        public class JsonRpcResponse
+        /// <summary>
+        /// Determines the state of a broadcasted transaction
+        /// </summary>
+        /// <param name="operationId"></param>
+        /// <returns></returns>
+        /// <exception cref="BusinessException"></exception>
+        public async Task<BroadcastedSingleTransactionResponse> GetBroadcastedTxSingle(Guid operationId)
         {
-            public string Id { get; set; }
-            public string Jsonrpc { get; set; }
-            public string Result { get; set; }
-            public RpcError Error { get; set; }
+            // Retrieve the broadcasted transaction and deserialize it.
+            var broadcastedTransaction = await GetBroadcastedTransaction(operationId);
+            var transaction = new MsgTx();
+            transaction.Decode(HexUtil.ToByteArray(broadcastedTransaction.EncodedTransaction));
             
-            public class RpcError
+            // Calculate the fee and total amount spent from the transaction.
+            var fee = transaction.TxIn.Sum(t => t.ValueIn) - transaction.TxOut.Sum(t => t.Value);
+            var amount = transaction.TxOut.Sum(t => t.Value);
+            
+            // Check to see if the transaction has been included in a block.
+            var knownTx = await _txRepo.GetTxInfoByHash(broadcastedTransaction.Hash);
+            var topBlock = await _blockRepository.GetHighestBlock();
+            var txState = knownTx == null
+                ? BroadcastedTransactionState.InProgress
+                : BroadcastedTransactionState.Completed;
+
+            // If the tx has been included in a block,
+            // use the block height + timestamp from the block
+            var blockHeight = knownTx?.BlockHeight ?? topBlock.Height;
+            var timestamp = knownTx == null ? DateTime.UtcNow : DateTimeUtil.FromUnixTime(knownTx.BlockTime);
+            
+            return new BroadcastedSingleTransactionResponse
             {
-                public int? Code { get; set; }
-                public string Message { get; set; }
-            }
+                Block = blockHeight,
+                State = txState,
+                Hash = broadcastedTransaction.Hash,
+                Amount = amount.ToString(),
+                Fee = fee.ToString(),
+                Error = "",
+                ErrorCode = null,
+                OperationId = operationId,
+                Timestamp = timestamp
+            };
+        }
+
+        public async Task UnsubscribeBroadcastedTx(Guid operationId)
+        {
+            var operation = await _broadcastTxRepo.GetAsync(operationId.ToString());
+            if (operation == null)
+                throw new BusinessException(ErrorReason.RecordNotFound);
+            
+            await _broadcastTxRepo.DeleteAsync(operation);
+        }
+        
+        private async Task SaveBroadcastedTransaction(BroadcastedTransaction broadcastedTx)
+        {            
+            // Store tx Hash to OperationId lookup
+            await _broadcastTxHashRepo.InsertAsync(
+                new BroadcastedTransactionByHash
+                {
+                    Hash = broadcastedTx.Hash,
+                    OperationId = broadcastedTx.OperationId
+                }
+            );
+
+            // Store operation
+            await _broadcastTxRepo.InsertAsync(broadcastedTx);
+        }
+
+        private async Task<BroadcastedTransaction> GetBroadcastedTransaction(Guid operationId)
+        {
+            // Retrieve previously saved BroadcastedTransaction record.
+            var broadcastedTx = await _broadcastTxRepo.GetAsync(operationId.ToString());
+            return broadcastedTx ?? throw new BusinessException(ErrorReason.RecordNotFound);
         }
     }
 }

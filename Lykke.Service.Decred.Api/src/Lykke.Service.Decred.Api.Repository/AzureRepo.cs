@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using AzureStorage;
 using Lykke.Service.Decred.Api.Common;
@@ -30,16 +31,14 @@ namespace Lykke.Service.Decred.Api.Repository
             return await _azureRepo.RecordExistsAsync(t);
         }
         
-        public async Task<T> GetAsync(RecordType recordType, string key)
+        public async Task<T> GetAsync(string key)
         {
-            try
-            {
-                return await _azureRepo.GetDataAsync("ByRowKey", KeyValueEntity.GetRowKey(recordType, key));
-            }
-            catch (StorageException ex) when(ex.RequestInformation.HttpStatusCode == RecordNotFoundStatus)
-            {
-                throw new BusinessException(ErrorReason.RecordNotFound, $"{typeof(T)} is not being observed", ex);
-            }
+            return await _azureRepo.GetDataAsync("ByRowKey", key);
+        }
+
+        public async Task<IEnumerable<T>> GetAsync(IEnumerable<string> keys)
+        {
+            return await _azureRepo.GetDataAsync("ByRowKey", keys);
         }
 
         public async Task InsertAsync(T value)

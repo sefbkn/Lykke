@@ -31,6 +31,13 @@ namespace Decred.BlockExplorer
         /// <param name="address"></param>
         /// <returns></returns>
         Task<UnspentTxOutput[]> GetUnspentTxOutputs(string address);
+
+        /// <summary>
+        /// Determines if a transaction is known, given its hash.
+        /// </summary>
+        /// <param name="transactionHash"></param>
+        /// <returns></returns>
+        Task<TxInfo> GetTxInfoByHash(string transactionHash);
     }
     
     public class TransactionRepository : ITransactionRepository
@@ -56,11 +63,18 @@ namespace Decred.BlockExplorer
                     from_addr.address as FromAddress,
                     to_addr.address as ToAddress,
                     to_addr.value as Amount,
-                    to_addr.funding_tx_hash as Hash
+                    to_addr.funding_tx_hash as Hash,
+                    tx.block_height as BlockHeight,
+                    tx.block_time as BlockTime
                 from addresses from_addr
                 join addresses to_addr on to_addr.funding_tx_hash = from_addr.spending_tx_hash
+                join transactions tx on tx.tx_hash = to_addr.funding_tx_hash
                 where from_addr.address = @address and to_addr.funding_tx_row_id > @minTxId
-                group by from_addr.address, to_addr.address, to_addr.value, to_addr.funding_tx_hash, to_addr.funding_tx_row_id
+                group by 
+                    from_addr.address, 
+                    to_addr.address, 
+                    to_addr.value, to_addr.funding_tx_hash, to_addr.funding_tx_row_id, 
+                    tx.block_height, tx.block_time
                 order by to_addr.funding_tx_row_id asc
                 limit @take";
 
@@ -77,11 +91,18 @@ namespace Decred.BlockExplorer
                     from_addr.address as FromAddress,
                     to_addr.address as ToAddress,
                     to_addr.value as Amount,
-                    to_addr.funding_tx_hash as Hash
+                    to_addr.funding_tx_hash as Hash,
+                    tx.block_height as BlockHeight,
+                    tx.block_time as BlockTime
                 from addresses from_addr
                 join addresses to_addr on to_addr.funding_tx_hash = from_addr.spending_tx_hash
+                join transactions tx on tx.tx_hash = to_addr.funding_tx_hash
                 where to_addr.address = @address and to_addr.funding_tx_row_id > @minTxId
-                group by from_addr.address, to_addr.address, to_addr.value, to_addr.funding_tx_hash, to_addr.funding_tx_row_id
+                group by 
+                    from_addr.address, 
+                    to_addr.address, 
+                    to_addr.value, to_addr.funding_tx_hash, to_addr.funding_tx_row_id, 
+                    tx.block_height, tx.block_time
                 order by to_addr.funding_tx_row_id asc
                 limit @take";
 
@@ -119,5 +140,25 @@ namespace Decred.BlockExplorer
 
             return result.ToArray();
         }
+
+        public async Task<TxInfo> GetTxInfoByHash(string transactionHash)
+        {
+            const string query =
+                @"select
+                    tx_hash as TxHash,
+                    block_height as  BlockHeight,
+                    block_time as BlockTime
+                from transactions where tx_hash = @txHash";
+            
+            var results = await _dbConnection.QueryAsync<TxInfo>(query, new { txHash = transactionHash });
+            return results.FirstOrDefault();
+        }
+    }
+
+    public class TxInfo
+    {
+        public string TxHash { get; set; }
+        public long BlockTime { get; set; }
+        public long BlockHeight { get; set; }
     }
 }

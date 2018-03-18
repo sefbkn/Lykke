@@ -4,6 +4,7 @@ using Decred.BlockExplorer;
 using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Balances;
 using Lykke.Service.Decred.Api.Common;
+using Lykke.Service.Decred.Api.Common.Entity;
 using Lykke.Service.Decred.Api.Repository;
 
 namespace Lykke.Service.Decred.Api.Services
@@ -11,18 +12,18 @@ namespace Lykke.Service.Decred.Api.Services
     public class BalanceService
     {        
         private readonly IObservableOperationRepository<ObservableWalletEntity> _observableWalletRepository;
-        private readonly IAddressRepository _balanceRepository;
+        private readonly IAddressRepository _addressRepository;
         private readonly IBlockRepository _blockRepository;
         private readonly IAddressValidationService _addressValidator;
 
         public BalanceService(
             IObservableOperationRepository<ObservableWalletEntity> observableWalletRepository,
-            IAddressRepository balanceRepository,
+            IAddressRepository addressRepository,
             IBlockRepository blockRepository,
             IAddressValidationService addressValidator)
         {
             _observableWalletRepository = observableWalletRepository;
-            _balanceRepository = balanceRepository;
+            _addressRepository = addressRepository;
             _blockRepository = blockRepository;
             _addressValidator = addressValidator;
         }
@@ -68,7 +69,7 @@ namespace Lykke.Service.Decred.Api.Services
             
             var block = await _blockRepository.GetHighestBlock();
             var balances = 
-               (from balance in await _balanceRepository.GetAddressBalancesAsync(block.Height, addresses)
+               (from balance in await _addressRepository.GetAddressBalancesAsync(block.Height, addresses)
                 select new WalletBalanceContract
                 {
                     AssetId = "DCR",
