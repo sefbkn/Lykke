@@ -1,23 +1,42 @@
 ﻿using System;
+using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
+using Decred.BlockExplorer;
+using Decred.Common.Client;
+using Lykke.Common.Api.Contract.Responses;
+using Lykke.Service.Decred.Api.Common.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Lykke.Service.Decred.Api.Controllers
 {
     public class StatusController : Controller
     {
-        private readonly ILog _log;
+        private readonly IHealthService _healthService;
 
-        public StatusController(ILog log)
+        public StatusController(IHealthService healthService)
         {
-            _log = log;
+            _healthService = healthService;
         }
         
         [HttpGet("/api/isalive")]
         public async Task<IActionResult> GetStatus()
         {
-            throw new NotImplementedException();
+            var healthIssues = await _healthService.GetHealthIssuesAsync();
+            return Ok(new IsAliveResponse
+            {
+                Name = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationName,
+                Version = Microsoft.Extensions.PlatformAbstractions.PlatformServices.Default.Application.ApplicationVersion,
+                Env = Program.EnvInfo,
+                IsDebug = true,
+                IssueIndicators = healthIssues
+                    .Select(i => new IsAliveResponse.IssueIndicator
+                    {
+                        Type = i.Type,
+                        Value = i.Value
+                    })
+            });
         }
+
     }
 }
