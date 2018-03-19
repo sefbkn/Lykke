@@ -9,7 +9,7 @@ namespace Lykke.Service.Decred.Api.Services
     public interface ITransactionFeeService
     {
         /// <summary>
-        /// Returns the number of atoms.
+        /// Returns fee per kb in DCR.
         /// </summary>
         /// <returns></returns>
         Task<decimal> GetFeePerKb();
