@@ -78,18 +78,29 @@ namespace Lykke.Service.Decred.Api.Services
             var consumedInputs = new List<Transaction.Input>();
             var dcrFeePerKb = await _feeService.GetFeePerKb();
             
+            // Accumulate inputs until we have enough to cover the cost
+            // of the amount + fee
             foreach (var input in allInputs)
             {
                 consumedInputs.Add(input);
                 totalSpent += input.InputAmount;
-                estFee = _feeService.CalculateFee(dcrFeePerKb, consumedInputs.Count, numOutputs, feeFactor); 
-                
-                // Accumulate inputs until we have enough to cover the cost
-                // of the amount + fee
-                if (totalSpent > amount + (request.IncludeFee ? 0 : estFee))
+
+                estFee = _feeService.CalculateFee(dcrFeePerKb, consumedInputs.Count, numOutputs, feeFactor);
+
+                var estAmount = amount + (request.IncludeFee ? 0 : estFee);
+                if (totalSpent == estAmount)
+                {
                     break;
-            }
+                }
+                if (totalSpent > estAmount)
+                {
+                    // If there will be change, adjust fee calculation to account for this.
+                    estFee = _feeService.CalculateFee(dcrFeePerKb, consumedInputs.Count, numOutputs+1, feeFactor);
+                    break;
+                }
+            }            
             
+            // If all inputs do not have enough value to fund the transaction.
             if(totalSpent < amount + (request.IncludeFee ? 0 : estFee))
                 throw new BusinessException(ErrorReason.NotEnoughBalance, "Address balance too low");
             
