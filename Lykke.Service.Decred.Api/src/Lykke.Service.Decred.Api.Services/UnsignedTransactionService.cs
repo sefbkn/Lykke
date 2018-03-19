@@ -37,6 +37,7 @@ namespace Lykke.Service.Decred.Api.Services
             var response = await _builder.BuildSingleTransactionAsync(request, feeFactor);
 
             var entity = new UnsignedTransactionEntity(
+                request.OperationId,
                 JsonConvert.SerializeObject(request),
                 JsonConvert.SerializeObject(response)
             );

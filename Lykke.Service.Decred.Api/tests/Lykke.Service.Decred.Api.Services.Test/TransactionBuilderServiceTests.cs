@@ -40,7 +40,7 @@ namespace Lykke.Service.Decred.Api.Services.Test
             };
             
             _mockTxRepo.Setup(m => m.GetUnspentTxOutputs(fromAddr)).ReturnsAsync(new[]{unspentOutput});
-            _mockFeeService.Setup(m => m.CalculateFee(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<decimal>()))
+            _mockFeeService.Setup(m => m.CalculateFee(It.IsAny<long>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<decimal>()))
                 .Returns(1);
             
             var subject = new TransactionBuilder(
