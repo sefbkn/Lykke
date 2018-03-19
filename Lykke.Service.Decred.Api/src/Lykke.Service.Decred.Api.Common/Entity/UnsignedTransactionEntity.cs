@@ -12,8 +12,9 @@ namespace Lykke.Service.Decred.Api.Common.Entity
             PartitionKey = "ByRowKey";
         }
 
-        public UnsignedTransactionEntity(string requestJson, string responseJson) : base()
+        public UnsignedTransactionEntity(Guid operationId, string requestJson, string responseJson) : this()
         {
+            OperationId = operationId;
             RequestJson = requestJson;
             ResponseJson = responseJson;
         }

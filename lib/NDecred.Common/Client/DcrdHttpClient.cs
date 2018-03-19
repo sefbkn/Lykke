@@ -16,7 +16,7 @@ namespace Decred.Common.Client
             _httpClientHandler = httpClientHandler;
         }
 
-        private async Task<DcrdRpcResponse<T>> Perform<T>(string method, params string[] parameters)
+        private async Task<DcrdRpcResponse<T>> Perform<T>(string method, params object[] parameters)
         {
             using (var httpClient = new HttpClient(_httpClientHandler, false))
             {
@@ -54,7 +54,7 @@ namespace Decred.Common.Client
 
         public async Task<decimal> EstimateFeeAsync(int numBlocks)
         {
-            var result = await Perform<decimal>("estimatefee");
+            var result = await Perform<decimal>("estimatefee", numBlocks);
             return result.Result;
         }
     }

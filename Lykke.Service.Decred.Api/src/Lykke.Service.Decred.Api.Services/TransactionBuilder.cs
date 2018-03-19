@@ -76,11 +76,13 @@ namespace Lykke.Service.Decred.Api.Services
             long estFee = 0;
             long totalSpent = 0;
             var consumedInputs = new List<Transaction.Input>();
+            var dcrFeePerKb = await _feeService.GetFeePerKb();
+            
             foreach (var input in allInputs)
             {
                 consumedInputs.Add(input);
                 totalSpent += input.InputAmount;
-                estFee = _feeService.CalculateFee(consumedInputs.Count, numOutputs, feeFactor); 
+                estFee = _feeService.CalculateFee(dcrFeePerKb, consumedInputs.Count, numOutputs, feeFactor); 
                 
                 // Accumulate inputs until we have enough to cover the cost
                 // of the amount + fee

@@ -44,7 +44,7 @@ namespace NDecred.Common.Wallet
         {
             // Deserialize wifs and generate privatekey/publickey/pubkeyhash mappings
             var keys =
-            (from wif in privateKeys
+               (from wif in privateKeys
                 let privKey = Wif.Deserialize(_network, wif)
                 select ExpandPrivateKey(privKey)).ToArray();
 
