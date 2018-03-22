@@ -58,6 +58,9 @@ namespace Lykke.Service.Decred.Api
 
             RegisterRepositories(services);
 
+
+            _log = CreateLogWithSlack(services, Configuration.LoadSettings<AppSettings>());
+            
             var appSettings = Configuration.Get<AppSettings>();
 
             // Register network dependency
@@ -70,10 +73,7 @@ namespace Lykke.Service.Decred.Api
                         Credentials = new NetworkCredential(
                             appSettings.ServiceSettings.Dcrd.RpcUser,
                             appSettings.ServiceSettings.Dcrd.RpcPass),
-                    }));
-            
-            _log = CreateLogWithSlack(services, Configuration.LoadSettings<AppSettings>());
-            
+                    }));            
             services.AddSingleton(p => _log);
             services.AddTransient<HttpClient>();
             services.AddTransient<TransactionHistoryService>();
@@ -123,14 +123,6 @@ namespace Lykke.Service.Decred.Api
                     new AzureRepo<BroadcastedTransaction>(
                         AzureTableStorage<BroadcastedTransaction>.Create(connectionString, "BroadcastedTransaction", consoleLogger)
                     ));
-
-            // Write up dcrdata postgres client to monitor transactions and balances.
-            var dcrdataDbFactory = new Func<Task<IDbConnection>>(async () =>
-            {
-                var sqlClient = new NpgsqlConnection(Configuration.GetConnectionString("dcrdata"));
-                await sqlClient.OpenAsync();
-                return sqlClient;
-            });
 
             services.AddScoped<IDbConnection, NpgsqlConnection>((p) =>
             {

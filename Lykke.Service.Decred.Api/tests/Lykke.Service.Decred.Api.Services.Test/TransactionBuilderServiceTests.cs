@@ -24,8 +24,8 @@ namespace Lykke.Service.Decred.Api.Services.Test
         [Fact]
         public async Task BuildSingleTransactionAsync_WithSingleUnspentOutput_BuildsExpectedTx()
         {
-            var fromAddr = "TscuZZicesEnx3H6sJ5hizmrjEcMv4iWA7k";
-            var toAddr = "Tsb44YQ7QPuxqDimNMRF4QjcBTxw8nnsfP9";
+            var fromAddr = "Tso2MVTUeVrjHTBFedFhiyM7yVTbieqp91h";
+            var toAddr = "TsmWaPM77WSyA3aiQ2Q1KnwGDVWvEkhip23";
             
             // Send 1 decred out of 2 total
             var amountToSend = 100000000;
