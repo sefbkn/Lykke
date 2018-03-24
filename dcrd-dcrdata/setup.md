@@ -7,7 +7,7 @@ Prior to deploying the Lykke.Service.Decred.Api project, there are 2 dependencie
 * dcrdata - Decred block explorer w/ postgresql backend
 
 By default, both programs use the testnet network and save block information in the current directory.
-To use mainnet, simply remove the `testnet=1` flag from both configuration files
+To use mainnet, simply remove the `testnet=1` flag from both configuration files.
 
 1. Edit configuration files
 
