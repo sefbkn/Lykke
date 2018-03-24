@@ -49,6 +49,8 @@ namespace Lykke.Service.Decred.Api
         public void ConfigureServices(IServiceCollection services)
         {            
             services.Configure<AppSettings>(Configuration);
+            var reloadableSettings = Configuration.LoadSettings<AppSettings>();
+
             services.AddMvc()
                 .AddJsonOptions(options =>
                 {
@@ -56,23 +58,25 @@ namespace Lykke.Service.Decred.Api
                     options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
                 });
 
-            RegisterRepositories(services);
+            RegisterRepositories(reloadableSettings, services);
 
-            var appSettings = Configuration.Get<AppSettings>();
 
             // Register network dependency
-            services.AddTransient(p => Network.ByName(appSettings.ServiceSettings.NetworkName));
-            services.AddTransient<IDcrdClient, DcrdHttpClient>(s => 
-                new DcrdHttpClient(
-                    appSettings.ServiceSettings.Dcrd.RpcEndpoint,
+            services.AddTransient(p => Network.ByName(reloadableSettings.CurrentValue.ServiceSettings.NetworkName));
+            services.AddTransient<IDcrdClient, DcrdHttpClient>(s =>
+            {
+                var settings = reloadableSettings.CurrentValue;
+                return new DcrdHttpClient(
+                    settings.ServiceSettings.Dcrd.RpcEndpoint,
                     new HttpClientHandler
                     {
                         Credentials = new NetworkCredential(
-                            appSettings.ServiceSettings.Dcrd.RpcUser,
-                            appSettings.ServiceSettings.Dcrd.RpcPass),
-                    }));
-            
-            _log = CreateLogWithSlack(services, Configuration.LoadSettings<AppSettings>());
+                            settings.ServiceSettings.Dcrd.RpcUser,
+                            settings.ServiceSettings.Dcrd.RpcPass),
+                    });
+            });
+
+            _log = CreateLogWithSlack(services, reloadableSettings);
             
             services.AddSingleton(p => _log);
             services.AddTransient<HttpClient>();
@@ -86,13 +90,12 @@ namespace Lykke.Service.Decred.Api
             services.AddTransient<BalanceService>();
         }
 
-        private void RegisterRepositories(IServiceCollection services)
+        private void RegisterRepositories(IReloadingManager<AppSettings> config, IServiceCollection services)
         {
             var consoleLogger = new LogToConsole();
 
-            // Wire up azure connections
-            var settings = Configuration.LoadSettings<AppSettings>();
-            var connectionString = settings.ConnectionString(a => Configuration.GetConnectionString("azure"));
+            // Wire up azure connections            
+            var connectionString = config.ConnectionString(a => a.ConnectionStrings.Azure);
             
             services.AddTransient
                <INosqlRepo<ObservableWalletEntity>, AzureRepo<ObservableWalletEntity>>(e => 
@@ -124,17 +127,10 @@ namespace Lykke.Service.Decred.Api
                         AzureTableStorage<BroadcastedTransaction>.Create(connectionString, "BroadcastedTransaction", consoleLogger)
                     ));
 
-            // Write up dcrdata postgres client to monitor transactions and balances.
-            var dcrdataDbFactory = new Func<Task<IDbConnection>>(async () =>
-            {
-                var sqlClient = new NpgsqlConnection(Configuration.GetConnectionString("dcrdata"));
-                await sqlClient.OpenAsync();
-                return sqlClient;
-            });
-
             services.AddScoped<IDbConnection, NpgsqlConnection>((p) =>
             {
-                var sqlClient = new NpgsqlConnection(Configuration.GetConnectionString("dcrdata"));
+                var dcrdataConnectionString = config.CurrentValue.ConnectionStrings.Dcrdata;
+                var sqlClient = new NpgsqlConnection(dcrdataConnectionString);
                 sqlClient.Open();
                 return sqlClient;
             });

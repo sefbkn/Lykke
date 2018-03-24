@@ -9,6 +9,7 @@ namespace Lykke.Service.Decred.Api
         public string NetworkType { get; set; }
         public ServiceSettings ServiceSettings { get; set; }
         public SlackNotificationsSettings SlackNotifications { get; set; }
+        public ConnectionStrings ConnectionStrings { get; set; }
     }
 
     public class AssetConfig
@@ -51,4 +52,10 @@ namespace Lykke.Service.Decred.Api
         public string QueueName { get; set; }
     }
 
+    public class ConnectionStrings
+    {
+        public string Azure { get; set; }
+        public string Dcrdata { get; set; }
+        public string Logging { get; set; }
+    }
 }

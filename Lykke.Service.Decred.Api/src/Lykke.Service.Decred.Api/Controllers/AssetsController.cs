@@ -1,6 +1,7 @@
 ﻿using System;
 using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Assets;
+using Lykke.SettingsReader;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -10,9 +11,10 @@ namespace Lykke.Service.Decred.Api.Controllers
     {
         private readonly AssetResponse _assetResponse;
 
-        public AssetsController(IOptions<AppSettings> settings)
+        public AssetsController(IReloadingManager<AppSettings> settings)
         {
-            var assetConfig = settings.Value?.ServiceSettings?.Asset;
+            var assetConfig = settings.CurrentValue.ServiceSettings.Asset;
+
             if(assetConfig == null)
                 throw new ArgumentException("Asset property must be set.");
             if(assetConfig.Precision < 0)
