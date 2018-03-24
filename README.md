@@ -1,3 +1,5 @@
+This project contains all items needed to integrate with the Decred network.
+
 # dcrd-dcrdata
 
 Contains docker containers and configurations files for dcrd and dcrdata.  The `Lykke.Service.Decred.Api` project requires both of these tools to be configured and running.
