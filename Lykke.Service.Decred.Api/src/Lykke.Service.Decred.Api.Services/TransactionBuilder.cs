@@ -1,9 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Decred.BlockExplorer;
-using Lykke.AzureStorage.Tables;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Lykke.Service.Decred.Api.Common;
 using NDecred.Common;

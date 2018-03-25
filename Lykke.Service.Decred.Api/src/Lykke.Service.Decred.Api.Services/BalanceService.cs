@@ -5,7 +5,6 @@ using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Balances;
 using Lykke.Service.Decred.Api.Common;
 using Lykke.Service.Decred.Api.Common.Entity;
-using Lykke.Service.Decred.Api.Repository;
 
 namespace Lykke.Service.Decred.Api.Services
 {    

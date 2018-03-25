@@ -1,6 +1,6 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
-using Decred.Common.Client;
+using DcrdClient;
 using MoreLinq;
 using Paymetheus.Decred;
 

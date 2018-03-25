@@ -1,9 +1,5 @@
-﻿using System;
-using System.Linq;
+﻿using System.Linq;
 using System.Threading.Tasks;
-using Common.Log;
-using Decred.BlockExplorer;
-using Decred.Common.Client;
 using Lykke.Common.Api.Contract.Responses;
 using Lykke.Service.Decred.Api.Common.Services;
 using Microsoft.AspNetCore.Mvc;

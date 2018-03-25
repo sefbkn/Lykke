@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
+using DcrdClient;
 using Decred.BlockExplorer;
-using Decred.Common.Client;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Lykke.Service.Decred.Api.Common;
 using Lykke.Service.Decred.Api.Common.Entity;
-using Lykke.Service.Decred.Api.Repository;
 using NDecred.Common;
-using Newtonsoft.Json;
 
 namespace Lykke.Service.Decred.Api.Services
 {

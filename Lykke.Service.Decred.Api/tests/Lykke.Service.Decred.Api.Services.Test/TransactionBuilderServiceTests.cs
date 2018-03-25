@@ -1,7 +1,7 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
+using DcrdClient;
 using Decred.BlockExplorer;
-using Decred.Common.Client;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Moq;
 using NDecred.Common;
