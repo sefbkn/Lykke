@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Common.Log;
+using DcrdClient;
 using Decred.BlockExplorer;
-using Decred.Common.Client;
 using Lykke.Service.Decred.Api.Common.Domain.Health;
 using Lykke.Service.Decred.Api.Common.Services;
 

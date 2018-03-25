@@ -154,11 +154,4 @@ namespace Decred.BlockExplorer
             return results.FirstOrDefault();
         }
     }
-
-    public class TxInfo
-    {
-        public string TxHash { get; set; }
-        public long BlockTime { get; set; }
-        public long BlockHeight { get; set; }
-    }
 }

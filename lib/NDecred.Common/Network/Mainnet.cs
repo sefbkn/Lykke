@@ -2,7 +2,7 @@ namespace NDecred.Common
 {
     public class Mainnet : Network
     {
-        public override string Name => "Mainnet";
+        public override string Name => "mainnet";
         public override AddressPrefix AddressPrefix => new MainnetAddressPrefix();
     }
     

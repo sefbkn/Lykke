@@ -33,6 +33,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Decred.BlockExplorer", "..\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Decred.Common", "..\lib\NDecred.Common\Decred.Common.csproj", "{671A26F8-42D9-41C2-BE54-415EAF5BA70D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DcrdClient", "..\lib\DcrdClient\DcrdClient.csproj", "{C83511EB-E5CC-41A5-8683-AF14D0223ADA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -71,6 +73,10 @@ Global
 		{671A26F8-42D9-41C2-BE54-415EAF5BA70D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{671A26F8-42D9-41C2-BE54-415EAF5BA70D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{671A26F8-42D9-41C2-BE54-415EAF5BA70D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C83511EB-E5CC-41A5-8683-AF14D0223ADA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C83511EB-E5CC-41A5-8683-AF14D0223ADA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C83511EB-E5CC-41A5-8683-AF14D0223ADA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C83511EB-E5CC-41A5-8683-AF14D0223ADA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -83,5 +89,6 @@ Global
 		{72EB130F-0DA1-472F-8022-C637B36801BE} = {CC2067D7-1971-47BB-B491-5649EA3C18B2}
 		{621E3109-186B-417C-9002-2E1DF0ED124A} = {BF745453-B940-470E-81BC-43FB67703D4E}
 		{671A26F8-42D9-41C2-BE54-415EAF5BA70D} = {CC2067D7-1971-47BB-B491-5649EA3C18B2}
+		{C83511EB-E5CC-41A5-8683-AF14D0223ADA} = {CC2067D7-1971-47BB-B491-5649EA3C18B2}
 	EndGlobalSection
 EndGlobal

@@ -2,7 +2,6 @@
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Lykke.Service.Decred.Api.Common;
 using Lykke.Service.Decred.Api.Common.Entity;
-using Lykke.Service.Decred.Api.Repository;
 using Newtonsoft.Json;
 
 namespace Lykke.Service.Decred.Api.Services

@@ -21,7 +21,7 @@ namespace NDecred.Common.Wallet
             HalfOrder = new BigInteger(CurveOrder.ToByteArray()).ShiftRight(1);
         }
 
-        internal Signature(byte[] derSignature)
+        public Signature(byte[] derSignature)
         {
             using (var decoder = new Asn1InputStream(derSignature))
             {

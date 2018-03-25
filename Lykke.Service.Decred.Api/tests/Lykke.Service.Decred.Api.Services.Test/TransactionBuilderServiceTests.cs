@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
+using DcrdClient;
 using Decred.BlockExplorer;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Moq;
@@ -11,20 +12,20 @@ namespace Lykke.Service.Decred.Api.Services.Test
 {
     public class TransactionBuilderTests
     {
-        private readonly Mock<ITransactionFeeService> _mockFeeService;
         private readonly Mock<ITransactionRepository> _mockTxRepo;
+        private readonly Mock<IDcrdClient> _mockDcrdClient;
         
         public TransactionBuilderTests()
         {
-            _mockFeeService = new Mock<ITransactionFeeService>();
+            _mockDcrdClient = new Mock<IDcrdClient>();
             _mockTxRepo = new Mock<ITransactionRepository>();
         }
-        
+
         [Fact]
         public async Task BuildSingleTransactionAsync_WithSingleUnspentOutput_BuildsExpectedTx()
         {
-            var fromAddr = "TscuZZicesEnx3H6sJ5hizmrjEcMv4iWA7k";
-            var toAddr = "Tsb44YQ7QPuxqDimNMRF4QjcBTxw8nnsfP9";
+            var fromAddr = "Tso2MVTUeVrjHTBFedFhiyM7yVTbieqp91h";
+            var toAddr = "TsmWaPM77WSyA3aiQ2Q1KnwGDVWvEkhip23";
             
             // Send 1 decred out of 2 total
             var amountToSend = 100000000;
@@ -36,15 +37,16 @@ namespace Lykke.Service.Decred.Api.Services.Test
                 OutputIndex = 1,
                 OutputValue = 2 * 100000000,
                 OutputVersion = 0,
-                Tree = 0
+                Tree = 0,
+                PkScript = new byte[0]
             };
             
             _mockTxRepo.Setup(m => m.GetUnspentTxOutputs(fromAddr)).ReturnsAsync(new[]{unspentOutput});
-            _mockFeeService.Setup(m => m.CalculateFee(It.IsAny<long>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<decimal>()))
-                .Returns(1);
+            _mockDcrdClient.Setup(m => m.EstimateFeeAsync(It.IsAny<int>())).ReturnsAsync(0.001m);
             
+            var txFeeService = new TransactionFeeService(_mockDcrdClient.Object);
             var subject = new TransactionBuilder(
-                _mockFeeService.Object,
+                txFeeService,
                 _mockTxRepo.Object);
             
             var request = new BuildSingleTransactionRequest
@@ -58,11 +60,13 @@ namespace Lykke.Service.Decred.Api.Services.Test
 
             var result = await subject.BuildSingleTransactionAsync(request, 1);
             var transaction = Transaction.Deserialize(HexUtil.ToByteArray(result.TransactionContext));
+            var expectedFee = txFeeService.CalculateFee(0.001m, 1, 2, 1);
             
+            Assert.Equal(expectedFee, 2 * 100000000 - transaction.Outputs.Sum(o => o.Amount));
             Assert.Equal(2, transaction.Outputs.Length);
             
             // Sent amount - fee
-            Assert.Equal(1, transaction.Outputs.Count(o => o.Amount == 99999999));
+            Assert.Equal(1, transaction.Outputs.Count(o => o.Amount + expectedFee == 100000000));
             
             // Change
             Assert.Equal(1, transaction.Outputs.Count(o => o.Amount == 100000000));

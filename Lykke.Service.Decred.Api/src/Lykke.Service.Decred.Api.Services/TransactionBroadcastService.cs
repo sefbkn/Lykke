@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Linq;
-using System.Net.Http;
 using System.Threading.Tasks;
+using DcrdClient;
 using Decred.BlockExplorer;
-using Decred.Common.Client;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Lykke.Service.Decred.Api.Common;
 using Lykke.Service.Decred.Api.Common.Entity;
-using Lykke.Service.Decred.Api.Repository;
 using NDecred.Common;
-using Newtonsoft.Json;
 
 namespace Lykke.Service.Decred.Api.Services
 {
@@ -95,14 +92,13 @@ namespace Lykke.Service.Decred.Api.Services
             
             // Check to see if the transaction has been included in a block.
             var knownTx = await _txRepo.GetTxInfoByHash(broadcastedTransaction.Hash);
-            var topBlock = await _blockRepository.GetHighestBlock();
             var txState = knownTx == null
                 ? BroadcastedTransactionState.InProgress
                 : BroadcastedTransactionState.Completed;
 
             // If the tx has been included in a block,
             // use the block height + timestamp from the block
-            var blockHeight = knownTx?.BlockHeight ?? topBlock.Height;
+            var blockHeight = knownTx?.BlockHeight ?? (await _blockRepository.GetHighestBlock()).Height;
             var timestamp = knownTx == null ? DateTime.UtcNow : DateTimeUtil.FromUnixTime(knownTx.BlockTime);
             
             return new BroadcastedSingleTransactionResponse
