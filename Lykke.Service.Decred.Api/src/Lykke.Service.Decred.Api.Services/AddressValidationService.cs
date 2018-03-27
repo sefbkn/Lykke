@@ -27,7 +27,6 @@ namespace Lykke.Service.Decred.Api.Services
             {
                 case "mainnet":
                 case "testnet":
-                case "simnet":
                     _network = network;
                     break;
                 default:
@@ -37,7 +36,7 @@ namespace Lykke.Service.Decred.Api.Services
         
         public bool IsValid(string address)
         {            
-            return Address.TryDecode(address, out var addr) && addr.IntendedBlockChain.Name == _network.Name;            
+            return Address.TryDecode(address, out var addr) && addr.IntendedBlockChain.Name == _network.Name.ToLower();            
         }
     }
 }

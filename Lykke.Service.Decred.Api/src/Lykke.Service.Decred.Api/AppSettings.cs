@@ -21,7 +21,6 @@ namespace Lykke.Service.Decred.Api
     
     public class DcrdSettings
     {
-        
         public string RpcEndpoint { get; set; }
         public string RpcUser { get; set; }
         public string RpcPass { get; set; }

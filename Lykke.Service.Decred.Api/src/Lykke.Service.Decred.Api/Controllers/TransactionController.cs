@@ -1,17 +1,12 @@
 ﻿using System;
-using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
 using Common.Log;
 using Lykke.Service.BlockchainApi.Contract.Common;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Lykke.Service.Decred.Api.Common;
-using Lykke.Service.Decred.Api.Repository;
 using Lykke.Service.Decred.Api.Services;
 using Microsoft.AspNetCore.Mvc;
-using NDecred.Common;
-using Newtonsoft.Json;
-using Paymetheus.Decred;
 
 namespace Lykke.Service.Decred.Api.Controllers
 {

@@ -2,11 +2,12 @@
 using System.Data;
 using System.Net;
 using System.Net.Http;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading.Tasks;
 using AzureStorage.Tables;
 using Common.Log;
+using DcrdClient;
 using Decred.BlockExplorer;
-using Decred.Common.Client;
 using Lykke.Common.ApiLibrary.Middleware;
 using Lykke.Logs;
 using Lykke.Service.Decred.Api.Common;
@@ -59,8 +60,8 @@ namespace Lykke.Service.Decred.Api
                 });
 
             RegisterRepositories(reloadableSettings, services);
-
-
+            _log = CreateLogWithSlack(reloadableSettings, services);
+            
             // Register network dependency
             services.AddTransient(p => Network.ByName(reloadableSettings.CurrentValue.ServiceSettings.NetworkName));
             services.AddTransient<IDcrdClient, DcrdHttpClient>(s =>
@@ -70,13 +71,14 @@ namespace Lykke.Service.Decred.Api
                     settings.ServiceSettings.Dcrd.RpcEndpoint,
                     new HttpClientHandler
                     {
+                        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
                         Credentials = new NetworkCredential(
                             settings.ServiceSettings.Dcrd.RpcUser,
                             settings.ServiceSettings.Dcrd.RpcPass),
                     });
             });
 
-            _log = CreateLogWithSlack(services, reloadableSettings);
+            _log = CreateLogWithSlack(reloadableSettings, services);
             
             services.AddSingleton(p => _log);
             services.AddTransient<HttpClient>();
@@ -174,7 +176,7 @@ namespace Lykke.Service.Decred.Api
             await _log.WriteMonitorAsync("", $"Env: {Program.EnvInfo}", "Terminating");
         }
 
-        private static ILog CreateLogWithSlack(IServiceCollection services, IReloadingManager<AppSettings> settings)
+        private static ILog CreateLogWithSlack(IReloadingManager<AppSettings> settings, IServiceCollection services)
         {
             var consoleLogger = new LogToConsole();
             var aggregateLogger = new AggregateLogger();

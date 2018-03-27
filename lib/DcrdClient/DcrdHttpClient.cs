@@ -1,10 +1,15 @@
-﻿using System.Net.Http;
+﻿using System;
+using System.Net;
+using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
 
-namespace Decred.Common.Client
+namespace DcrdClient
 {
+    /// <summary>
+    /// Http client to communicate with dcrd.
+    /// </summary>
     public class DcrdHttpClient : IDcrdClient
     {
         private readonly string _apiUrl;
@@ -30,8 +35,11 @@ namespace Decred.Common.Client
                 
                 var content = new StringContent(JsonConvert.SerializeObject(request), Encoding.UTF8, "application/json");
                 var response = await httpClient.PostAsync(_apiUrl, content);
-
                 var responseString = await response.Content.ReadAsStringAsync();
+                
+                if (response.StatusCode == HttpStatusCode.Unauthorized)
+                    throw new UnauthorizedAccessException(responseString);
+                
                 return JsonConvert.DeserializeObject<DcrdRpcResponse<T>>(responseString);
             }
         }

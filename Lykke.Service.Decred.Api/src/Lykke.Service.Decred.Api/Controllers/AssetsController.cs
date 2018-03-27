@@ -3,7 +3,6 @@ using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Assets;
 using Lykke.SettingsReader;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Options;
 
 namespace Lykke.Service.Decred.Api.Controllers
 {
