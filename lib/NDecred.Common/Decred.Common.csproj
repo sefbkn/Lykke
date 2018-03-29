@@ -3,12 +3,13 @@
     <TargetFramework>netstandard2.0</TargetFramework>
     <AssemblyName>Decred.Common</AssemblyName>
     <RootNamespace>Decred.Common</RootNamespace>
+    <Version>1.0.1</Version>
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="..\Paymetheus.Decred\Paymetheus.Decred.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Newtonsoft.Json" Version="11.0.1" />
+    <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
     <PackageReference Include="Portable.BouncyCastle" Version="1.8.1.4" />
   </ItemGroup>
 </Project>

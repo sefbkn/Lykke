@@ -4,6 +4,7 @@
     <AssemblyName>Paymetheus.Decred</AssemblyName>
     <RootNamespace>Paymetheus.Decred</RootNamespace>
     <LangVersion>7</LangVersion>
+    <Version>1.0.1</Version>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>

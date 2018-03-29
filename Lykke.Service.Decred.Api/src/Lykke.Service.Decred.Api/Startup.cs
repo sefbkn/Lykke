@@ -38,11 +38,9 @@ namespace Lykke.Service.Decred.Api
         {
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
-                .AddJsonFile("appsettings.json")
-                .AddJsonFile($"appsettings.{env.EnvironmentName}.json")
                 .AddEnvironmentVariables();
+            
             Configuration = builder.Build();
-
             Environment = env;
         }
 
