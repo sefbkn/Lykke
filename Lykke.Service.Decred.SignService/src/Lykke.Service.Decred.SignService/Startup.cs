@@ -1,5 +1,6 @@
 ﻿using Lykke.Service.Decred.SignService.Core.Services;
 using Lykke.Service.Decred.SignService.Services;
+using Lykke.SettingsReader;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
@@ -15,7 +16,6 @@ namespace Lykke.Service.Decred.SignService
         {
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
-                .AddJsonFile("appsettings.json")
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
         }
@@ -27,8 +27,8 @@ namespace Lykke.Service.Decred.SignService
         {
             services.AddMvc();
 
-            var network = Configuration.GetValue<string>("Network");
-            services.AddTransient(s => Network.ByName(network));
+            var reloadableSettings = Configuration.LoadSettings<AppSettings>();
+            services.AddTransient(s => Network.ByName(reloadableSettings.CurrentValue.Network));
             services.AddTransient<ISigningWallet, SigningWallet>();
             services.AddTransient<ISecurityService, SecurityService>();
             services.AddTransient<SigningService>();
@@ -44,6 +44,7 @@ namespace Lykke.Service.Decred.SignService
             }
 
             app.UseMvc();
+            
         }
     }
 }
