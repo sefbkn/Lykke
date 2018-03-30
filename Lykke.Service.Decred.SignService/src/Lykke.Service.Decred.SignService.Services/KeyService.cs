@@ -1,8 +1,4 @@
-﻿using System;
-using System.Security.Cryptography;
-using Lykke.Service.Decred.SignService.Core.Services;
-using Lykke.Service.Decred.SignService.Services;
-using Lykke.Service.Decred_SignService.Core.Services;
+﻿using Lykke.Service.Decred.SignService.Core.Services;
 using NDecred.Common;
 
 namespace Lykke.Service.Decred.SignService.Services

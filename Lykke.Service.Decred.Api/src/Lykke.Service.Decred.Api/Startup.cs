@@ -57,8 +57,8 @@ namespace Lykke.Service.Decred.Api
                     options.SerializerSettings.Converters.Add(new Newtonsoft.Json.Converters.StringEnumConverter());
                 });
 
-            RegisterRepositories(reloadableSettings, services);
             _log = CreateLogWithSlack(reloadableSettings, services);
+            RegisterRepositories(reloadableSettings, services);
             
             // Register network dependency
             services.AddTransient(p => Network.ByName(reloadableSettings.CurrentValue.ServiceSettings.NetworkName));
@@ -72,11 +72,9 @@ namespace Lykke.Service.Decred.Api
                         ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator,
                         Credentials = new NetworkCredential(
                             settings.ServiceSettings.Dcrd.RpcUser,
-                            settings.ServiceSettings.Dcrd.RpcPass),
+                            settings.ServiceSettings.Dcrd.RpcPass)
                     });
             });
-
-            _log = CreateLogWithSlack(reloadableSettings, services);
             
             services.AddSingleton(p => _log);
             services.AddTransient<HttpClient>();

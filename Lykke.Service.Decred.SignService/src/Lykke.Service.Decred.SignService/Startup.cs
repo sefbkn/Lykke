@@ -16,7 +16,6 @@ namespace Lykke.Service.Decred.SignService
             var builder = new ConfigurationBuilder()
                 .SetBasePath(env.ContentRootPath)
                 .AddJsonFile("appsettings.json")
-                .AddJsonFile($"appsettings.{env.EnvironmentName}.json")
                 .AddEnvironmentVariables();
             Configuration = builder.Build();
         }
