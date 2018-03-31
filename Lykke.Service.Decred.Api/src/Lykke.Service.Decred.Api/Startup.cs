@@ -61,7 +61,16 @@ namespace Lykke.Service.Decred.Api
             RegisterRepositories(reloadableSettings, services);
             
             // Register network dependency
-            services.AddTransient(p => Network.ByName(reloadableSettings.CurrentValue.ServiceSettings.NetworkName));
+            services.AddTransient(p =>
+            {
+                var networkType = reloadableSettings.CurrentValue.ServiceSettings.NetworkType.Trim().ToLower();
+                var name = 
+                    networkType == "test" ? "testnet" :
+                    networkType == "main" ? "mainnet" :
+                    throw new Exception($"Unrecognized network type '{networkType}'");
+                return Network.ByName(name);
+            });
+            
             services.AddTransient<IDcrdClient, DcrdHttpClient>(s =>
             {
                 var settings = reloadableSettings.CurrentValue;
@@ -93,7 +102,7 @@ namespace Lykke.Service.Decred.Api
             var consoleLogger = new LogToConsole();
 
             // Wire up azure connections            
-            var connectionString = config.ConnectionString(a => a.ConnectionStrings.Azure);
+            var connectionString = config.ConnectionString(a => a.ServiceSettings.Db.Azure);
             
             services.AddTransient
                <INosqlRepo<ObservableWalletEntity>, AzureRepo<ObservableWalletEntity>>(e => 
@@ -127,7 +136,7 @@ namespace Lykke.Service.Decred.Api
 
             services.AddScoped<IDbConnection, NpgsqlConnection>((p) =>
             {
-                var dcrdataConnectionString = config.CurrentValue.ConnectionStrings.Dcrdata;
+                var dcrdataConnectionString = config.CurrentValue.ServiceSettings.Db.Dcrdata;
                 var sqlClient = new NpgsqlConnection(dcrdataConnectionString);
                 sqlClient.Open();
                 return sqlClient;

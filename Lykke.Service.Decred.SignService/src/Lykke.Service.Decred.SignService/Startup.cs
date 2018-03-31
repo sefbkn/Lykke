@@ -1,4 +1,5 @@
-﻿using Lykke.Service.Decred.SignService.Core.Services;
+﻿using System;
+using Lykke.Service.Decred.SignService.Core.Services;
 using Lykke.Service.Decred.SignService.Services;
 using Lykke.SettingsReader;
 using Microsoft.AspNetCore.Builder;
@@ -28,7 +29,18 @@ namespace Lykke.Service.Decred.SignService
             services.AddMvc();
 
             var reloadableSettings = Configuration.LoadSettings<AppSettings>();
-            services.AddTransient(s => Network.ByName(reloadableSettings.CurrentValue.Network));
+            
+           
+            services.AddTransient(p =>
+            {
+                var networkType = reloadableSettings.CurrentValue.NetworkType.Trim().ToLower();
+                var name = 
+                    networkType == "test" ? "testnet" :
+                    networkType == "main" ? "mainnet" :
+                    throw new Exception($"Unrecognized network type '{networkType}'");
+                return Network.ByName(name);
+            });
+
             services.AddTransient<ISigningWallet, SigningWallet>();
             services.AddTransient<ISecurityService, SecurityService>();
             services.AddTransient<SigningService>();

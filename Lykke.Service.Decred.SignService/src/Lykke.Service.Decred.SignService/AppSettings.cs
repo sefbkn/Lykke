@@ -2,6 +2,6 @@
 {
     public class AppSettings
     {
-        public string Network { get; set; }
+        public string NetworkType { get; set; }
     }
 }
