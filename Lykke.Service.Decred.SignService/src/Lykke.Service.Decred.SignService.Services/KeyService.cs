@@ -9,9 +9,9 @@ namespace Lykke.Service.Decred.SignService.Services
     public class KeyService : IKeyService
     {
         private readonly Network _network;
-        private readonly SecurityService _securityService;
+        private readonly ISecurityService _securityService;
 
-        public KeyService(SecurityService securityService, Network network)
+        public KeyService(ISecurityService securityService, Network network)
         {
             _securityService = securityService;
             _network = network;
