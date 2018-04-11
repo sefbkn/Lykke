@@ -68,7 +68,8 @@ namespace Lykke.Service.Decred.Api.Services
                 await _log.WriteErrorAsync(nameof(HealthService), nameof(GetDcrdHealthIssues), "", e);
                 return new[]
                 {
-                    HealthIssue.Create("DcrdPingFailure", "Failed to ping dcrd"), 
+                    HealthIssue.Create("DcrdPingFailure", 
+                        $"Failed to ping dcrd.  {e.Message}".Trim())
                 };
             }
         }

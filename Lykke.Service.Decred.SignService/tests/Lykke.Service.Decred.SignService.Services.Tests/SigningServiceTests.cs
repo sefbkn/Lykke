@@ -41,5 +41,25 @@ namespace Lykke.Service.Decred.SignService.Services.Tests
             
             Assert.Equal(signedHexTx, result);
         }
+
+        [Fact]
+        public void SignRawTransaction_WithUnknownPrivateKey_ThrowsException()
+        {
+            var unsignedHexTx =
+                "010000000198c61f42bf153b869557f9dcb5b95da114b6267ed3d17d7dffddb8ee7cb2ec080100000000" +
+                "ffffffff02a08601000000000000001976a9146e0ece55286e20b787c47c69b528ed86c7de315588acc0" +
+                "08ff050000000000001976a9146e0ece55286e20b787c47c69b528ed86c7de315588ac000000000000000" +
+                "001001602060000000070fd0300010000001976a9146e0ece55286e20b787c47c69b528ed86c7de315588" +
+                "ac00000000";
+
+            var network = Network.Testnet;
+            var securityService = new SecurityService();
+            var signingWallet = new SigningWallet(network, securityService);
+            var signingService = new SigningService(signingWallet);
+
+            Assert.Throws<SigningException>(() => 
+                signingService.SignRawTransaction(new string[0], HexUtil.ToByteArray(unsignedHexTx))
+            );
+        }
     }
 }

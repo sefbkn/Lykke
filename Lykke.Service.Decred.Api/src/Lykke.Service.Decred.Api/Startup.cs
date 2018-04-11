@@ -46,7 +46,7 @@ namespace Lykke.Service.Decred.Api
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
-        {            
+        {
             services.Configure<AppSettings>(Configuration);
             var reloadableSettings = Configuration.LoadSettings<AppSettings>();
 
@@ -86,6 +86,7 @@ namespace Lykke.Service.Decred.Api
             });
             
             services.AddSingleton(p => _log);
+            services.AddTransient(p => reloadableSettings);
             services.AddTransient<HttpClient>();
             services.AddTransient<TransactionHistoryService>();
             services.AddTransient<IHealthService, HealthService>();

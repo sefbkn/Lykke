@@ -59,7 +59,16 @@ namespace NDecred.Common.Wallet
                 // Match the private key with the public key script for this input
                 // Note: the public key script is embedded in the signature script portion of the transaction.
                 var publicKeyHash = GetPublicKeyHash(input.SignatureScript);
-                var key = keys.Single(k => k.PublicKeyHash.SequenceEqual(publicKeyHash));
+                
+                var signingKeys = keys
+                    .Where(k => k.PublicKeyHash.SequenceEqual(publicKeyHash))
+                    .ToList();
+                
+                // Ensure one of the known private keys is able to sign the transaction.
+                if (!signingKeys.Any())
+                    throw new SigningException("Not able to unlock utxo with provided keys");
+                
+                var key = signingKeys.First();
 
                 // Zero out all scripts except the current one.
                 foreach (var txCopyIn in txCopy.TxIn)

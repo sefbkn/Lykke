@@ -34,7 +34,13 @@ namespace Lykke.Service.Decred.SignService.Controllers
             
             catch (Exception e)
             {
-                return BadRequest(new ErrorResponse("SigningError"));
+                return BadRequest(new ErrorResponse("SigningError")
+                {
+                    Errors =
+                    {
+                        {"message", new[]{e.Message}}
+                    }
+                });
             }
         }
     }
