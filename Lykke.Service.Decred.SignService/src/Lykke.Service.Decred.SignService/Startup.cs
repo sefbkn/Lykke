@@ -30,7 +30,6 @@ namespace Lykke.Service.Decred.SignService
 
             var reloadableSettings = Configuration.LoadSettings<AppSettings>();
             
-           
             services.AddTransient(p =>
             {
                 var networkType = reloadableSettings.CurrentValue.NetworkType.Trim().ToLower();
@@ -38,6 +37,7 @@ namespace Lykke.Service.Decred.SignService
                     networkType == "test" ? "testnet" :
                     networkType == "main" ? "mainnet" :
                     throw new Exception($"Unrecognized network type '{networkType}'");
+                
                 return Network.ByName(name);
             });
 

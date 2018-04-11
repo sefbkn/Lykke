@@ -14,7 +14,7 @@ namespace Lykke.Service.Decred.SignService.Models
         public string Message { get; }
 
         [DataMember(Name = "modelErrors")]
-        public Dictionary<string, string[]> Errors { get; }
+        public Dictionary<string, string[]> Errors { get; set; }
 
         public ErrorResponse(string message = null)
         {

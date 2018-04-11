@@ -22,10 +22,6 @@ namespace Lykke.Service.Decred.SignService
                 var host = new WebHostBuilder()
                     .UseKestrel()
                     .UseContentRoot(Directory.GetCurrentDirectory())
-                    .ConfigureLogging((hostingContext, logging) =>
-                    {
-                        logging.AddConfiguration(hostingContext.Configuration.GetSection("Logging"));
-                    })
                     .UseStartup<Startup>()
                     .UseApplicationInsights()
                     .Build();

@@ -101,7 +101,7 @@ namespace Lykke.Service.Decred.Api.Services
             // If all inputs do not have enough value to fund the transaction.
             if(totalSpent < amount + (request.IncludeFee ? 0 : estFee))
                 throw new BusinessException(ErrorReason.NotEnoughBalance, "Address balance too low");
-            
+                        
             // The fee either comes from the change or the sent amount
             var send = amount - (request.IncludeFee ? estFee : 0 );
             var change = (totalSpent - amount) - (request.IncludeFee ? 0 : estFee);
