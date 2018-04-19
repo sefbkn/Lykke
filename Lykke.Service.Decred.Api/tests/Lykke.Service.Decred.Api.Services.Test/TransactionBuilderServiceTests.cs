@@ -25,10 +25,10 @@ namespace Lykke.Service.Decred.Api.Services.Test
         public async Task BuildSingleTransactionAsync_WithSingleUnspentOutput_BuildsExpectedTx()
         {
             var fromAddr = "Tso2MVTUeVrjHTBFedFhiyM7yVTbieqp91h";
-            var toAddr = "TsmWaPM77WSyA3aiQ2Q1KnwGDVWvEkhip23";
+            var toAddr = "TsntCvtbzaDtx4DwGehWcM3Ydb6Muc79YbV";
             
             // Send 1 decred out of 2 total
-            var amountToSend = 100000000;
+            var amountToSend = 1;
             var unspentOutput = new UnspentTxOutput()
             {
                 BlockHeight = 0,
@@ -60,7 +60,7 @@ namespace Lykke.Service.Decred.Api.Services.Test
 
             var result = await subject.BuildSingleTransactionAsync(request, 1);
             var transaction = Transaction.Deserialize(HexUtil.ToByteArray(result.TransactionContext));
-            var expectedFee = txFeeService.CalculateFee(0.001m, 1, 2, 1);
+            var expectedFee = txFeeService.CalculateFee(100000, 1, 2, 1);
             
             Assert.Equal(expectedFee, 2 * 100000000 - transaction.Outputs.Sum(o => o.Amount));
             Assert.Equal(2, transaction.Outputs.Length);

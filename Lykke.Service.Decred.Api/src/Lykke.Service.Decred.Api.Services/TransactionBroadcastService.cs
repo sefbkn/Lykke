@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using DcrdClient;
 using Decred.BlockExplorer;
+using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Lykke.Service.Decred.Api.Common;
 using Lykke.Service.Decred.Api.Common.Entity;
@@ -106,7 +107,7 @@ namespace Lykke.Service.Decred.Api.Services
                 Block = blockHeight,
                 State = txState,
                 Hash = broadcastedTransaction.Hash,
-                Amount = amount.ToString(),
+                Amount = Conversions.CoinsFromContract(amount.ToString(), 8).ToString(),
                 Fee = fee.ToString(),
                 Error = "",
                 ErrorCode = null,

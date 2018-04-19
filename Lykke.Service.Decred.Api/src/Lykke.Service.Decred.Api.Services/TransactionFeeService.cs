@@ -12,8 +12,8 @@ namespace Lykke.Service.Decred.Api.Services
         /// Returns fee per kb in DCR.
         /// </summary>
         /// <returns></returns>
-        Task<decimal> GetFeePerKb();
-        long CalculateFee(decimal feePerKb, int numInputs, int numOutputs, decimal feeFactor);
+        Task<long> GetFeePerKb();
+        long CalculateFee(long feePerKb, int numInputs, int numOutputs, decimal feeFactor);
     }
     
     public class TransactionFeeService : ITransactionFeeService
@@ -28,19 +28,18 @@ namespace Lykke.Service.Decred.Api.Services
             _dcrdClient = dcrdClient;
         }
 
-
-        public async Task<decimal> GetFeePerKb()
+        public async Task<long> GetFeePerKb()
         {
             const int numBlocks = 12 * 6;
-            return await _dcrdClient.EstimateFeeAsync(numBlocks);
+            return (long)(await _dcrdClient.EstimateFeeAsync(numBlocks) * AtomsPerDcr);
         }
 
-        public long CalculateFee(decimal feePerKb, int numInputs, int numOutputs, decimal feeFactor)
+        public long CalculateFee(long feePerKb, int numInputs, int numOutputs, decimal feeFactor)
         {
             var outputs = _dummyOutput.Repeat(numOutputs).ToArray();
             var serializeSizeBytes = Transaction.EstimateSerializeSize(numInputs, outputs, true);
             var serializeSizeKb = serializeSizeBytes / 1024m;
-            return (long)(serializeSizeKb * feePerKb * feeFactor * AtomsPerDcr);
+            return (long)(serializeSizeKb * feePerKb * feeFactor);
         }
     }
 }
