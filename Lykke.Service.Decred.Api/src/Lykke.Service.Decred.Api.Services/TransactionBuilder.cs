@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Decred.BlockExplorer;
@@ -28,6 +29,12 @@ namespace Lykke.Service.Decred.Api.Services
         {
             _feeService = feeService;
             _txRepo = txRepo;
+        }
+
+        private long DcrToAtoms(string dcrQuantity)
+        {
+            var qty = decimal.Parse(dcrQuantity);
+            return (long)(qty * (decimal) Math.Pow(10, 8));
         }
         
         /// <summary>
@@ -69,12 +76,12 @@ namespace Lykke.Service.Decred.Api.Services
                 )).ToArray();
             
             // The amount that is being requested.
-            var amount = long.Parse(request.Amount);
+            var amount = DcrToAtoms(request.Amount);
 
             long estFee = 0;
             long totalSpent = 0;
             var consumedInputs = new List<Transaction.Input>();
-            var dcrFeePerKb = await _feeService.GetFeePerKb();
+            var feePerKb = await _feeService.GetFeePerKb();
             
             // Accumulate inputs until we have enough to cover the cost
             // of the amount + fee
@@ -83,29 +90,38 @@ namespace Lykke.Service.Decred.Api.Services
                 consumedInputs.Add(input);
                 totalSpent += input.InputAmount;
 
-                estFee = _feeService.CalculateFee(dcrFeePerKb, consumedInputs.Count, numOutputs, feeFactor);
-
+                estFee = _feeService.CalculateFee(feePerKb, consumedInputs.Count, numOutputs, feeFactor);
                 var estAmount = amount + (request.IncludeFee ? 0 : estFee);
+                
                 if (totalSpent == estAmount)
                 {
                     break;
                 }
+                
                 if (totalSpent > estAmount)
                 {
                     // If there will be change, adjust fee calculation to account for this.
-                    estFee = _feeService.CalculateFee(dcrFeePerKb, consumedInputs.Count, numOutputs+1, feeFactor);
+                    estFee = _feeService.CalculateFee(feePerKb, consumedInputs.Count, numOutputs+1, feeFactor);
                     break;
                 }
-            }            
-            
-            // If all inputs do not have enough value to fund the transaction.
-            if(totalSpent < amount + (request.IncludeFee ? 0 : estFee))
-                throw new BusinessException(ErrorReason.NotEnoughBalance, "Address balance too low");
-                        
+            }
+
             // The fee either comes from the change or the sent amount
             var send = amount - (request.IncludeFee ? estFee : 0 );
             var change = (totalSpent - amount) - (request.IncludeFee ? 0 : estFee);
-            
+
+            // Do not build transactions that are too small.
+            if (TransactionRules.IsDustAmount(change, Transaction.PayToPubKeyHashPkScriptSize, new Amount(feePerKb)))
+                throw new BusinessException(ErrorReason.AmountTooSmall, "Amount is dust");
+
+            // If all inputs do not have enough value to fund the transaction, throw error.
+            if(request.IncludeFee &&  estFee > amount)
+                throw new BusinessException(ErrorReason.AmountTooSmall, "Amount not enough to include fee");
+
+            // If all inputs do not have enough value to fund the transaction, throw error.
+            if(totalSpent < amount + (request.IncludeFee ? 0 : estFee))
+                throw new BusinessException(ErrorReason.NotEnoughBalance, "Address balance too low");
+
             // Build outputs to address + change address.
             // If any of the outputs is zero value, exclude it.  For example, if there is no change.
             var outputs = new[] {
