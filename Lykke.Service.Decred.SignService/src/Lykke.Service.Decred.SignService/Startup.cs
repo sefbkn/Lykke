@@ -43,7 +43,7 @@ namespace Lykke.Service.Decred.SignService
 
             services.AddTransient<ISigningWallet, SigningWallet>();
             services.AddTransient<ISecurityService, SecurityService>();
-            services.AddTransient<SigningService>();
+            services.AddTransient<ISigningService, SigningService>();
             services.AddTransient<IKeyService, KeyService>();
         }
 
