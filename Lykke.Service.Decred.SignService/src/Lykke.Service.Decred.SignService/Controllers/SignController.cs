@@ -10,9 +10,9 @@ namespace Lykke.Service.Decred.SignService.Controllers
     [Route("api/[controller]")]
     public class SignController : Controller
     {
-        private readonly SigningService _signingService;
+        private readonly ISigningService _signingService;
 
-        public SignController(SigningService signingService)
+        public SignController(ISigningService signingService)
         {
             _signingService = signingService;
         }
@@ -29,8 +29,8 @@ namespace Lykke.Service.Decred.SignService.Controllers
             {
                 var txBytes = HexUtil.ToByteArray(request.TransactionContext);
                 var result = _signingService.SignRawTransaction(request.Keys, txBytes);
-                var response = new {
-                    signedTransaction = result
+                var response = new SignedTransactionResponse {
+                    SignedTransaction = result
                 };
                 
                 return Ok(response);

@@ -1,4 +1,3 @@
-using System;
 using NDecred.Common;
 using NDecred.Common.Wallet;
 using Xunit;

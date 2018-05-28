@@ -7,11 +7,16 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.5.0" />
+    <PackageReference Include="Moq" Version="4.8.2" />
     <PackageReference Include="xunit" Version="2.3.1" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.3.1" />
     <DotNetCliToolReference Include="dotnet-xunit" Version="2.3.1" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Lykke.Service.Decred.SignService.Services\Lykke.Service.Decred.SignService.Services.csproj" />
+    <ProjectReference Include="..\..\src\Lykke.Service.Decred.SignService\Lykke.Service.Decred.SignService.csproj">
+      <Project>{AB89F606-E993-4CAA-B327-B9E6288CAC3A}</Project>
+      <Name>Lykke.Service.Decred.SignService</Name>
+    </ProjectReference>
   </ItemGroup>
 </Project>
