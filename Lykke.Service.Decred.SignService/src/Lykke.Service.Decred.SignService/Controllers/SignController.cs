@@ -29,7 +29,11 @@ namespace Lykke.Service.Decred.SignService.Controllers
             {
                 var txBytes = HexUtil.ToByteArray(request.TransactionContext);
                 var result = _signingService.SignRawTransaction(request.Keys, txBytes);
-                return Ok(result);
+                var response = new {
+                    signedTransaction = result
+                };
+                
+                return Ok(response);
             }
             
             catch (Exception e)
