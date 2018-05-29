@@ -52,21 +52,33 @@ namespace Lykke.Service.Decred.Api.Controllers
                 var response = await _txBuilderService.BuildSingleTransactionAsync(request, feeFactor);
                 return Json(response);
             }
-            
+
             catch (BusinessException exception) when (exception.Reason == ErrorReason.AmountTooSmall)
             {
+                Response.StatusCode = (int) HttpStatusCode.Conflict;
                 return Json(new
                 {
                     errorCode = "amountIsTooSmall",
                     transactionContext = (string) null
                 });
             }
-            
+
             catch (BusinessException exception) when (exception.Reason == ErrorReason.NotEnoughBalance)
             {
+                Response.StatusCode = (int) HttpStatusCode.Conflict;
                 return Json(new
                 {
                     errorCode = "notEnoughBalance",
+                    transactionContext = (string) null
+                });
+            }
+
+            catch (Exception exception)
+            {
+                Response.StatusCode = (int) HttpStatusCode.InternalServerError;
+                return Json(new
+                {
+                    errorCode = exception.ToString(),
                     transactionContext = (string) null
                 });
             }
@@ -80,27 +92,18 @@ namespace Lykke.Service.Decred.Api.Controllers
                 // Broadcast the signed transaction
                 await _txBroadcastService.Broadcast(request.OperationId, request.SignedTransaction);
                 Response.StatusCode = (int) HttpStatusCode.OK;
+                return Json(new { errorMessage = "" });
             }
-            catch (BusinessException e) when (e.Reason == ErrorReason.DuplicateRecord)
+            catch (BusinessException ex) when (ex.Reason == ErrorReason.DuplicateRecord)
             {
                 // If this operationid was already broadcast, return 409 conflict.
-                Response.StatusCode = (int) HttpStatusCode.Conflict;
+                return await GenericErrorResponse(ex, request.OperationId, HttpStatusCode.Conflict);
             }
-            catch (TransactionBroadcastException e)
+            
+            catch (Exception ex)
             {
-                // Log actual error message from broadcast service
-                await _log.WriteErrorAsync(nameof(TransactionController), nameof(Broadcast), request.OperationId.ToString(), e);
-                Response.StatusCode = (int) HttpStatusCode.InternalServerError;
+                return await GenericErrorResponse(ex, request.OperationId, HttpStatusCode.InternalServerError);
             }
-
-            // Neither of the errors:
-            //     * amountIsTooSmall
-            //     * notEnoughBalance
-            // would occur here, since we don't
-            // construct or sign transactions with those errors.
-            return Json(new {
-                errorMessage = ""
-            });
         }
         
         [HttpGet("api/transactions/broadcast/single/{operationId}")]
@@ -117,8 +120,12 @@ namespace Lykke.Service.Decred.Api.Controllers
             {
                 return NoContent();
             }
-        }
 
+            catch (Exception e)
+            {
+                return await GenericErrorResponse(e, operationId, HttpStatusCode.InternalServerError);
+            }
+        }
 
         [HttpDelete("api/transactions/broadcast/{operationId}")]
         public async Task<IActionResult> RemoveObservableOperation(Guid operationId)
@@ -132,8 +139,18 @@ namespace Lykke.Service.Decred.Api.Controllers
             {
                 return NoContent();
             }
+            catch (Exception e)
+            {
+                return await GenericErrorResponse(e, operationId, HttpStatusCode.InternalServerError);
+            }
         }
-                
+
+        private async Task<JsonResult> GenericErrorResponse(Exception ex, Guid operationId, HttpStatusCode status)
+        {
+            Response.StatusCode = (int) status;
+            await _log.WriteErrorAsync(nameof(TransactionController), nameof(Broadcast), operationId.ToString(), ex);
+            return Json(new { errorMessage = ex.ToString() });
+        }
 
         #region Not implemented endpoints
 
