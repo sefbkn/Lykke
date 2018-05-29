@@ -114,7 +114,6 @@ namespace Lykke.Service.Decred.Api.Controllers
                 // Retrieves a broadcasted transaction
                 var result = await _txBroadcastService.GetBroadcastedTxSingle(operationId);
                 return Json(result);
-
             }
             catch (BusinessException e) when (e.Reason == ErrorReason.RecordNotFound)
             {
@@ -132,7 +131,7 @@ namespace Lykke.Service.Decred.Api.Controllers
         {            
             try
             {
-                await _txBroadcastService.UnsubscribeBroadcastedTx(operationId);
+                await _txBroadcastService.UnsubscribeBroadcastedTx(operationId);                
                 return Ok();
             }
             catch (BusinessException e) when(e.Reason == ErrorReason.RecordNotFound)
@@ -144,7 +143,7 @@ namespace Lykke.Service.Decred.Api.Controllers
                 return await GenericErrorResponse(e, operationId, HttpStatusCode.InternalServerError);
             }
         }
-
+        
         private async Task<JsonResult> GenericErrorResponse(Exception ex, Guid operationId, HttpStatusCode status)
         {
             Response.StatusCode = (int) status;

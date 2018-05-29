@@ -3,6 +3,8 @@ using System.Threading.Tasks;
 using DcrdClient;
 using Decred.BlockExplorer;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
+using Lykke.Service.Decred.Api.Common;
+using Lykke.Service.Decred.Api.Common.Entity;
 using Moq;
 using NDecred.Common;
 using Paymetheus.Decred;
@@ -13,12 +15,14 @@ namespace Lykke.Service.Decred.Api.Services.Test
     public class TransactionBuilderTests
     {
         private readonly Mock<ITransactionRepository> _mockTxRepo;
+        private readonly Mock<INosqlRepo<BroadcastedOutpoint>> _mockBroadcastedOutpointRepo;
         private readonly Mock<IDcrdClient> _mockDcrdClient;
         
         public TransactionBuilderTests()
         {
             _mockDcrdClient = new Mock<IDcrdClient>();
             _mockTxRepo = new Mock<ITransactionRepository>();
+            _mockBroadcastedOutpointRepo = new Mock<INosqlRepo<BroadcastedOutpoint>>();
         }
 
         [Fact]
@@ -28,7 +32,7 @@ namespace Lykke.Service.Decred.Api.Services.Test
             var toAddr = "TsntCvtbzaDtx4DwGehWcM3Ydb6Muc79YbV";
             
             // Send 1 decred out of 2 total
-            var amountToSend = 1;
+            var amountToSend = 100000000;
             var unspentOutput = new UnspentTxOutput()
             {
                 BlockHeight = 0,
@@ -43,11 +47,15 @@ namespace Lykke.Service.Decred.Api.Services.Test
             
             _mockTxRepo.Setup(m => m.GetUnspentTxOutputs(fromAddr)).ReturnsAsync(new[]{unspentOutput});
             _mockDcrdClient.Setup(m => m.EstimateFeeAsync(It.IsAny<int>())).ReturnsAsync(0.001m);
+            _mockBroadcastedOutpointRepo.Setup(m => m.GetAsync($"{unspentOutput.Hash}:1"))
+                .ReturnsAsync((BroadcastedOutpoint) null);
             
             var txFeeService = new TransactionFeeService(_mockDcrdClient.Object);
             var subject = new TransactionBuilder(
                 txFeeService,
-                _mockTxRepo.Object);
+                _mockTxRepo.Object,
+                _mockBroadcastedOutpointRepo.Object
+            );
             
             var request = new BuildSingleTransactionRequest
             {

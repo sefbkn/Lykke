@@ -1,5 +1,6 @@
 ﻿using System.Linq;
 using System.Threading.Tasks;
+using DcrdClient;
 using Decred.BlockExplorer;
 using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Balances;
@@ -12,18 +13,18 @@ namespace Lykke.Service.Decred.Api.Services
     {        
         private readonly INosqlRepo<ObservableWalletEntity> _observableWalletRepository;
         private readonly IAddressRepository _addressRepository;
-        private readonly IBlockRepository _blockRepository;
+        private readonly IDcrdClient _dcrdClient;
         private readonly IAddressValidationService _addressValidator;
 
         public BalanceService(
             INosqlRepo<ObservableWalletEntity> observableWalletRepository,
             IAddressRepository addressRepository,
-            IBlockRepository blockRepository,
+            IDcrdClient dcrdClient,
             IAddressValidationService addressValidator)
         {
             _observableWalletRepository = observableWalletRepository;
             _addressRepository = addressRepository;
-            _blockRepository = blockRepository;
+            _dcrdClient = dcrdClient;
             _addressValidator = addressValidator;
         }
         
@@ -61,14 +62,17 @@ namespace Lykke.Service.Decred.Api.Services
         /// <param name="take">Max number of balances to retrieve</param>
         /// <param name="continuation">Determines position in the data set to start from</param>
         /// <returns></returns>
-        public async Task<PaginationResponse<WalletBalanceContract>> GetBalancesAsync(int take, string continuation)
+        public async Task<PaginationResponse<WalletBalanceContract>> GetBalancesAsync(
+            int confirmationDepth, int take, string continuation)
         {
             var result = await _observableWalletRepository.GetDataWithContinuationTokenAsync(take, continuation);            
             var addresses = result.Entities.Select(e => e.Address).ToArray();
+                        
+            var bestBlock = await _dcrdClient.GetBestBlockAsync();
+            var safeBlock = bestBlock.Height - confirmationDepth;
             
-            var block = await _blockRepository.GetHighestBlock();
             var balances = 
-               (from balance in await _addressRepository.GetAddressBalancesAsync(block.Height, addresses)
+               (from balance in await _addressRepository.GetAddressBalancesAsync(safeBlock, addresses)
                 select new WalletBalanceContract
                 {
                     AssetId = "DCR",
