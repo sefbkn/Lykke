@@ -8,6 +8,7 @@ using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Lykke.Service.Decred.Api.Common;
 using Lykke.Service.Decred.Api.Common.Entity;
 using NDecred.Common;
+using Paymetheus.Decred;
 
 namespace Lykke.Service.Decred.Api.Services
 {
@@ -23,22 +24,38 @@ namespace Lykke.Service.Decred.Api.Services
         private readonly IDcrdClient _dcrdClient;
         private readonly IBlockRepository _blockRepository;
         private readonly ITransactionRepository _txRepo;
-        
+
         private readonly INosqlRepo<BroadcastedTransaction> _broadcastTxRepo;
         private readonly INosqlRepo<BroadcastedTransactionByHash> _broadcastTxHashRepo;
+        private readonly INosqlRepo<BroadcastedOutpoint> _broadcastedOutpointRepo;
 
         public TransactionBroadcastService(
             IDcrdClient dcrdClient, 
             IBlockRepository blockRepository,
             ITransactionRepository txRepo,
+            INosqlRepo<BroadcastedOutpoint> broadcastedOutpointRepo,
             INosqlRepo<BroadcastedTransaction> broadcastTxRepo,
             INosqlRepo<BroadcastedTransactionByHash> broadcastTxHashRepo)
         {
             _dcrdClient = dcrdClient;
             _blockRepository = blockRepository;
             _txRepo = txRepo;
+            
             _broadcastTxRepo = broadcastTxRepo;
             _broadcastTxHashRepo = broadcastTxHashRepo;
+            _broadcastedOutpointRepo = broadcastedOutpointRepo;
+        }
+
+        private string[] GetOutpointKeysForRawTransaction(string hexTransaction)
+        {
+            var txBytes = HexUtil.ToByteArray(hexTransaction);
+            return GetOutpointKeysForRawTransaction(txBytes);
+        }
+
+        private string[] GetOutpointKeysForRawTransaction(byte[] txBytes)
+        {
+            var tx = Transaction.Deserialize(txBytes);
+            return tx.Inputs.Select(input => input.PreviousOutpoint.ToString()).ToArray();
         }
         
         /// <summary>
@@ -50,28 +67,32 @@ namespace Lykke.Service.Decred.Api.Services
         /// <exception cref="TransactionBroadcastException"></exception>
         public async Task Broadcast(Guid operationId, string hexTransaction)
         {
+            var txBytes = HexUtil.ToByteArray(hexTransaction);
+            var msgTx = new MsgTx();
+            msgTx.Decode(txBytes);
+
             // If the operation exists in the cache, throw exception
             var cachedResult = await _broadcastTxRepo.GetAsync(operationId.ToString());
             if (cachedResult != null)
-                throw new BusinessException(ErrorReason.DuplicateRecord);
-
+                throw new BusinessException(ErrorReason.DuplicateRecord, "Operation already broadcast");
+            
             // Submit the transaction to the network via dcrd
             var result = await _dcrdClient.SendRawTransactionAsync(hexTransaction);                
             if (result.Error != null)
                 throw new TransactionBroadcastException($"[{result.Error.Code}] {result.Error.Message}");
+
+            // Flag the consumed outpoints as spent.
+            var outpoints = GetOutpointKeysForRawTransaction(txBytes);
+            foreach (var outpoint in outpoints)
+                _broadcastedOutpointRepo.InsertAsync(new BroadcastedOutpoint {Value = outpoint});
             
-            // Calculate the hash to perform lookups with later. 
-            var transaction = new MsgTx();
-            transaction.Decode(HexUtil.ToByteArray(hexTransaction));
-            var txHash = HexUtil.FromByteArray(transaction.GetHash().Reverse().ToArray());
-            
+            var txHash = HexUtil.FromByteArray(msgTx.GetHash().Reverse().ToArray());
             await SaveBroadcastedTransaction(new BroadcastedTransaction
             {
                 OperationId = operationId,
                 Hash = txHash,
                 EncodedTransaction = hexTransaction
-            });
-            
+            });   
         }
         
         /// <summary>
@@ -122,8 +143,14 @@ namespace Lykke.Service.Decred.Api.Services
             if (operation == null)
                 throw new BusinessException(ErrorReason.RecordNotFound);
             
+            // Unflag outpoints as spent.
+            var outpoints = GetOutpointKeysForRawTransaction(operation.EncodedTransaction);
+            foreach (var outpoint in outpoints)
+                await _broadcastedOutpointRepo.DeleteAsync(new BroadcastedOutpoint{Value = outpoint});
+    
             await _broadcastTxRepo.DeleteAsync(operation);
         }
+        
         
         private async Task SaveBroadcastedTransaction(BroadcastedTransaction broadcastedTx)
         {            

@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using Decred.BlockExplorer;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Lykke.Service.Decred.Api.Common;
+using Lykke.Service.Decred.Api.Common.Entity;
 using NDecred.Common;
 using Paymetheus.Decred;
 using Paymetheus.Decred.Wallet;
@@ -22,19 +23,21 @@ namespace Lykke.Service.Decred.Api.Services
     {
         private readonly ITransactionFeeService _feeService;
         private readonly ITransactionRepository _txRepo;
+        private readonly INosqlRepo<BroadcastedOutpoint> _broadcastedOutpointRepo;
 
         public TransactionBuilder(
             ITransactionFeeService feeService, 
-            ITransactionRepository txRepo)
+            ITransactionRepository txRepo,
+            INosqlRepo<BroadcastedOutpoint> broadcastedOutpointRepo)
         {
             _feeService = feeService;
             _txRepo = txRepo;
+            _broadcastedOutpointRepo = broadcastedOutpointRepo;
         }
 
-        private long DcrToAtoms(string dcrQuantity)
+        private async Task<bool> IsBroadcastedUtxo(Transaction.OutPoint outpoint)
         {
-            var qty = decimal.Parse(dcrQuantity);
-            return (long)(qty * (decimal) Math.Pow(10, 8));
+            return await _broadcastedOutpointRepo.GetAsync(outpoint.ToString()) != null;
         }
         
         /// <summary>
@@ -82,11 +85,15 @@ namespace Lykke.Service.Decred.Api.Services
             long totalSpent = 0;
             var consumedInputs = new List<Transaction.Input>();
             var feePerKb = await _feeService.GetFeePerKb();
-            
+                        
             // Accumulate inputs until we have enough to cover the cost
             // of the amount + fee
             foreach (var input in allInputs)
             {
+                // Don't consume an outpoint if it's spent.
+                if (await IsBroadcastedUtxo(input.PreviousOutpoint))
+                    continue;
+
                 consumedInputs.Add(input);
                 totalSpent += input.InputAmount;
 

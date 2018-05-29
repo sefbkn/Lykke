@@ -36,6 +36,7 @@ namespace Lykke.Service.Decred.Api
     public class ServiceSettings
     {
         public string NetworkType { get; set; }
+        public int ConfirmationDepth { get; set; } = 6;
         public AssetConfig Asset { get; set; }
         public DcrdSettings Dcrd { get; set; }
         public DbSettings Db { get; set; }

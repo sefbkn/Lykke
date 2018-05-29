@@ -2,6 +2,7 @@
 using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Balances;
 using Lykke.Service.Decred.Api.Services;
+using Lykke.SettingsReader;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Lykke.Service.Decred.Api.Controllers
@@ -9,10 +10,12 @@ namespace Lykke.Service.Decred.Api.Controllers
     public class BalanceController : Controller
     {
         private readonly BalanceService _service;
+        private readonly int _confirmationDepth;
 
-        public BalanceController(BalanceService service)
+        public BalanceController(IReloadingManager<AppSettings> settings, BalanceService service)
         {
             _service = service;
+            _confirmationDepth = settings.CurrentValue.ServiceSettings.ConfirmationDepth;
         }
         
         /// <summary>
@@ -48,7 +51,7 @@ namespace Lykke.Service.Decred.Api.Controllers
         [HttpGet("api/balances/")]
         public async Task<PaginationResponse<WalletBalanceContract>> GetBalances([FromQuery]int take, [FromQuery] string continuation)
         {
-            return await _service.GetBalancesAsync(take, continuation);
+            return await _service.GetBalancesAsync(_confirmationDepth, take, continuation);
         }
     }
 }
