@@ -13,6 +13,7 @@ Sample appsettings json
     {
       "ServiceSettings":{
         "NetworkType": "Test",
+        "ConfirmationDepth": 6,
         "Dcrd":{
           "RpcEndpoint": "https://localhost:19109",
           "RpcUser": "user",
