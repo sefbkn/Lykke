@@ -76,7 +76,7 @@ namespace Lykke.Service.Decred.Api.Services
                 )).ToArray();
             
             // The amount that is being requested.
-            var amount = DcrToAtoms(request.Amount);
+            var amount = long.Parse(request.Amount);
 
             long estFee = 0;
             long totalSpent = 0;
