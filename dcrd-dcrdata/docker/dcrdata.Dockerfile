@@ -5,6 +5,7 @@ RUN adduser --disabled-password --gecos ''  $USER
 RUN go get -u -v github.com/golang/dep/cmd/dep
 RUN git clone https://github.com/decred/dcrdata $GOPATH/src/github.com/decred/dcrdata
 RUN cd $GOPATH/src/github.com/decred/dcrdata && \
+    git checkout tags/v2.0 && \
     dep ensure && \
 go install
 
