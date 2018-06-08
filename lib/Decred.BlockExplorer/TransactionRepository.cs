@@ -37,7 +37,7 @@ namespace Decred.BlockExplorer
         /// </summary>
         /// <param name="transactionHash"></param>
         /// <returns></returns>
-        Task<TxInfo> GetTxInfoByHash(string transactionHash);
+        Task<TxInfo> GetTxInfoByHash(string transactionHash, long blockHeight);
     }
     
     public class TransactionRepository : ITransactionRepository
@@ -141,16 +141,21 @@ namespace Decred.BlockExplorer
             return result.ToArray();
         }
 
-        public async Task<TxInfo> GetTxInfoByHash(string transactionHash)
+        public async Task<TxInfo> GetTxInfoByHash(string transactionHash, long blockHeight)
         {
             const string query =
                 @"select
                     tx_hash as TxHash,
                     block_height as  BlockHeight,
                     block_time as BlockTime
-                from transactions where tx_hash = @txHash";
+                from transactions where tx_hash = @txHash and block_height <= @blockHeight";
             
-            var results = await _dbConnection.QueryAsync<TxInfo>(query, new { txHash = transactionHash });
+            var results = await _dbConnection.QueryAsync<TxInfo>(query, new
+            {
+                txHash = transactionHash, 
+                blockHeight = blockHeight
+            });
+            
             return results.FirstOrDefault();
         }
     }

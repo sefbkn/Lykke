@@ -8,6 +8,7 @@ namespace DcrdClient
         Task<DcrdRpcResponse<string>> SendRawTransactionAsync(string hexTransaction);
         
         Task<GetBestBlockResult> GetBestBlockAsync();
+        Task<long> GetMaxConfirmedBlockHeight();
         
         // Returns estimated fee as dcr/kb
         Task<decimal> EstimateFeeAsync(int numBlocks);

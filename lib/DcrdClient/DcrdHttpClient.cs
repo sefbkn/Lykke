@@ -13,12 +13,14 @@ namespace DcrdClient
     public class DcrdHttpClient : IDcrdClient
     {
         private readonly string _apiUrl;
+        private readonly int _minConfirmations;
         private readonly HttpClientHandler _httpClientHandler;
 
-        public DcrdHttpClient(string apiUrl, HttpClientHandler httpClientHandler)
+        public DcrdHttpClient(string apiUrl, HttpClientHandler httpClientHandler, int minConfirmations = 6)
         {
             _apiUrl = apiUrl;
             _httpClientHandler = httpClientHandler;
+            _minConfirmations = minConfirmations;
         }
 
         private async Task<DcrdRpcResponse<T>> Perform<T>(string method, params object[] parameters)
@@ -58,6 +60,12 @@ namespace DcrdClient
         {
             var result = await Perform<GetBestBlockResult>("getbestblock");
             return result.Result;
+        }
+        
+        public async Task<long> GetMaxConfirmedBlockHeight()
+        {
+            var result = await GetBestBlockAsync();
+            return result.Height - _minConfirmations;
         }
 
         public async Task<decimal> EstimateFeeAsync(int numBlocks)

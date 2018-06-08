@@ -147,7 +147,7 @@ namespace Lykke.Service.Decred.Api.Controllers
         private async Task<JsonResult> GenericErrorResponse(Exception ex, Guid operationId, HttpStatusCode status)
         {
             Response.StatusCode = (int) status;
-            await _log.WriteErrorAsync(nameof(TransactionController), nameof(Broadcast), operationId.ToString(), ex);
+            await _log.WriteErrorAsync(nameof(TransactionController), nameof(GenericErrorResponse), operationId.ToString(), ex);
             return Json(new { errorMessage = ex.ToString() });
         }
 

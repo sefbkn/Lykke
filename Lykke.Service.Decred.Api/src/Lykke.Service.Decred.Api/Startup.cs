@@ -74,6 +74,7 @@ namespace Lykke.Service.Decred.Api
             services.AddTransient<IDcrdClient, DcrdHttpClient>(s =>
             {
                 var settings = reloadableSettings.CurrentValue;
+                var minConfirmations = settings.ServiceSettings.ConfirmationDepth;
                 return new DcrdHttpClient(
                     settings.ServiceSettings.Dcrd.RpcEndpoint,
                     new HttpClientHandler
@@ -82,7 +83,7 @@ namespace Lykke.Service.Decred.Api
                         Credentials = new NetworkCredential(
                             settings.ServiceSettings.Dcrd.RpcUser,
                             settings.ServiceSettings.Dcrd.RpcPass)
-                    });
+                    }, minConfirmations);
             });
             
             services.AddSingleton(p => _log);
