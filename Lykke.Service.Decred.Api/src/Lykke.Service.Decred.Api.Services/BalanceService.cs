@@ -62,17 +62,14 @@ namespace Lykke.Service.Decred.Api.Services
         /// <param name="take">Max number of balances to retrieve</param>
         /// <param name="continuation">Determines position in the data set to start from</param>
         /// <returns></returns>
-        public async Task<PaginationResponse<WalletBalanceContract>> GetBalancesAsync(
-            int confirmationDepth, int take, string continuation)
+        public async Task<PaginationResponse<WalletBalanceContract>> GetBalancesAsync(int take, string continuation)
         {
             var result = await _observableWalletRepository.GetDataWithContinuationTokenAsync(take, continuation);            
             var addresses = result.Entities.Select(e => e.Address).ToArray();
-                        
-            var bestBlock = await _dcrdClient.GetBestBlockAsync();
-            var safeBlock = bestBlock.Height - confirmationDepth;
+            var blockHeight = await _dcrdClient.GetMaxConfirmedBlockHeight();
             
             var balances = 
-               (from balance in await _addressRepository.GetAddressBalancesAsync(safeBlock, addresses)
+               (from balance in await _addressRepository.GetAddressBalancesAsync(addresses, blockHeight)
                 select new WalletBalanceContract
                 {
                     AssetId = "DCR",

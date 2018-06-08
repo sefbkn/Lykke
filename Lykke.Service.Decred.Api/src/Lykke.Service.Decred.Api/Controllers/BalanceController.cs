@@ -10,12 +10,10 @@ namespace Lykke.Service.Decred.Api.Controllers
     public class BalanceController : Controller
     {
         private readonly BalanceService _service;
-        private readonly int _confirmationDepth;
 
-        public BalanceController(IReloadingManager<AppSettings> settings, BalanceService service)
+        public BalanceController(BalanceService service)
         {
             _service = service;
-            _confirmationDepth = settings.CurrentValue.ServiceSettings.ConfirmationDepth;
         }
         
         /// <summary>
@@ -51,7 +49,7 @@ namespace Lykke.Service.Decred.Api.Controllers
         [HttpGet("api/balances/")]
         public async Task<PaginationResponse<WalletBalanceContract>> GetBalances([FromQuery]int take, [FromQuery] string continuation)
         {
-            return await _service.GetBalancesAsync(_confirmationDepth, take, continuation);
+            return await _service.GetBalancesAsync(take, continuation);
         }
     }
 }

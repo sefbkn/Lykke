@@ -113,22 +113,23 @@ namespace Lykke.Service.Decred.Api.Services
             var amount = transaction.TxOut.Sum(t => t.Value);
             
             // Check to see if the transaction has been included in a block.
-            var knownTx = await _txRepo.GetTxInfoByHash(broadcastedTransaction.Hash);
+            var safeBlockHeight = await _dcrdClient.GetMaxConfirmedBlockHeight();
+            var knownTx = await _txRepo.GetTxInfoByHash(broadcastedTransaction.Hash, safeBlockHeight);
             var txState = knownTx == null
                 ? BroadcastedTransactionState.InProgress
                 : BroadcastedTransactionState.Completed;
 
             // If the tx has been included in a block,
             // use the block height + timestamp from the block
-            var blockHeight = knownTx?.BlockHeight ?? (await _blockRepository.GetHighestBlock()).Height;
+            var txBlockHeight = knownTx?.BlockHeight ?? safeBlockHeight;
             var timestamp = knownTx == null ? DateTime.UtcNow : DateTimeUtil.FromUnixTime(knownTx.BlockTime);
             
             return new BroadcastedSingleTransactionResponse
             {
-                Block = blockHeight,
+                Block = txBlockHeight,
                 State = txState,
                 Hash = broadcastedTransaction.Hash,
-                Amount = Conversions.CoinsFromContract(amount.ToString(), 8).ToString(),
+                Amount = amount.ToString(),
                 Fee = fee.ToString(),
                 Error = "",
                 ErrorCode = null,
