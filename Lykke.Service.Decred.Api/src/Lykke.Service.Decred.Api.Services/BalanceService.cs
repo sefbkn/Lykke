@@ -38,9 +38,9 @@ namespace Lykke.Service.Decred.Api.Services
         public async Task SubscribeAsync(string address)
         {
             if (!_addressValidator.IsValid(address))
-                throw new BusinessException(ErrorReason.InvalidAddress);
+                throw new BusinessException(ErrorReason.InvalidAddress, "Address is invalid");
             
-            await _observableWalletRepository.InsertAsync(new ObservableWalletEntity { Address = address });
+            await _observableWalletRepository.InsertAsync(new ObservableWalletEntity { Address = address }, false);
         }
 
         /// <summary>
@@ -51,7 +51,7 @@ namespace Lykke.Service.Decred.Api.Services
         /// <returns></returns>
         /// <exception cref="BusinessException"></exception>
         public async Task UnsubscribeAsync(string address)
-        {            
+        {
             var entity = new ObservableWalletEntity(){ Address = address };
             await _observableWalletRepository.DeleteAsync(entity);
         }

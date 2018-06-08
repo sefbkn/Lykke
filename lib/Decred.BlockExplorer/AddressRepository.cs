@@ -14,7 +14,7 @@ namespace Decred.BlockExplorer
         /// <param name="maxBlockHeight"></param>
         /// <param name="addresses"></param>
         /// <returns></returns>
-        Task<AddressBalance[]> GetAddressBalancesAsync(long maxBlockHeight, string[] addresses);
+        Task<AddressBalance[]> GetAddressBalancesAsync(string[] addresses, long blockHeight);
     }
 
     /// <summary>
@@ -29,23 +29,24 @@ namespace Decred.BlockExplorer
             _dbConnection = dbConnection;
         }
 
-        public async Task<AddressBalance[]> GetAddressBalancesAsync(long maxBlockHeight, string[] addresses)
+        public async Task<AddressBalance[]> GetAddressBalancesAsync(string[] addresses, long blockHeight)
         {
             const string query = 
                 @"select address as Address, sum(value) as Balance from addresses " +
                  "join transactions on transactions.id = funding_tx_row_id " +
-                 "where block_height <= @maxBlockHeight and address = any(@addresses) and spending_tx_hash is null " +
+                 "where block_height <= @blockHeight and address = any(@addresses) and spending_tx_hash is null " +
                  "group by address";
             
             var results = (await _dbConnection.QueryAsync<AddressBalance>(query, 
-                new { maxBlockHeight = maxBlockHeight, addresses = addresses })).ToList();
+                new { blockHeight = blockHeight, addresses = addresses })).ToList();
+            
 
             // Since some addresses with 0 balance may not be returned, make sure return value has
             // corresponding value for each provided address.
             var balances = addresses.Select(address => new AddressBalance
             {
                 Address = address,
-                Block = maxBlockHeight
+                Block = blockHeight
             }).ToDictionary(balance => balance.Address);
 
             foreach (var result in results)

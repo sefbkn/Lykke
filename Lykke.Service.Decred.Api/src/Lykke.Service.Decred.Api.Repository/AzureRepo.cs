@@ -41,11 +41,14 @@ namespace Lykke.Service.Decred.Api.Repository
             return await _azureRepo.GetDataAsync("ByRowKey", keys);
         }
 
-        public async Task InsertAsync(T value)
+        public async Task InsertAsync(T value, bool upsert)
         {
             try
             {
-                await _azureRepo.InsertOrReplaceAsync(value);
+                if(upsert)
+                    await _azureRepo.InsertOrReplaceAsync(value);
+                else
+                    await _azureRepo.InsertAsync(value);
             }
             catch (StorageException e) when (e.RequestInformation.HttpStatusCode == DuplicateRecordStatus)
             {

@@ -142,7 +142,7 @@ namespace Lykke.Service.Decred.Api.Services
         {
             var operation = await _broadcastTxRepo.GetAsync(operationId.ToString());
             if (operation == null)
-                throw new BusinessException(ErrorReason.RecordNotFound);
+                throw new BusinessException(ErrorReason.RecordNotFound, "Record not found");
             
             // Unflag outpoints as spent.
             var outpoints = GetOutpointKeysForRawTransaction(operation.EncodedTransaction);
@@ -172,7 +172,7 @@ namespace Lykke.Service.Decred.Api.Services
         {
             // Retrieve previously saved BroadcastedTransaction record.
             var broadcastedTx = await _broadcastTxRepo.GetAsync(operationId.ToString());
-            return broadcastedTx ?? throw new BusinessException(ErrorReason.RecordNotFound);
+            return broadcastedTx ?? throw new BusinessException(ErrorReason.RecordNotFound, "Record not found");
         }
     }
 }
