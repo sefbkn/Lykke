@@ -97,36 +97,15 @@ namespace Lykke.Service.Decred.Api.Services
         
         private async Task<HistoricalTransactionContract[]> GetHistoricalTransactionContracts(TxHistoryResult[] transactions)
         {
-            var operationIdLookup = await BuildOperationIdLookup(transactions);
             return transactions.Select(tx => new HistoricalTransactionContract
             {
-                Amount = tx.Amount,
+                Amount = tx.Amount.ToString(),
                 AssetId = "DCR",
                 FromAddress = tx.FromAddress,
                 ToAddress = tx.ToAddress,
                 Hash = tx.Hash,
-                Timestamp = DateTimeUtil.FromUnixTime(tx.BlockTime),
-                // Match up transactions that have an operation id
-                // from a previously broadcast transaction.
-                OperationId = operationIdLookup.ContainsKey(tx.Hash) ? operationIdLookup[tx.Hash] : Guid.Empty,
+                Timestamp = DateTimeUtil.FromUnixTime(tx.BlockTime)
             }).ToArray();
-        }
-
-        /// <summary>
-        /// Creates a dictionary of transaction hashes to lykke operation ids.
-        /// 
-        /// Searches for transaction hashes that were broadcast, and retrieves the respective hash value.
-        /// </summary>
-        /// <param name="transactions"></param>
-        /// <returns></returns>
-        private async Task<Dictionary<string, Guid>> BuildOperationIdLookup(IEnumerable<TxHistoryResult> transactions)
-        {
-            // Lookup hashes for operation id
-            var txHashes = transactions.Select(r => r.Hash);
-
-            // Check to see if the hash has been broadcast.  Hash is the row key.
-            var broadcastedTxHashes = await _broadcastTxHashRepo.GetAsync(txHashes);            
-            return broadcastedTxHashes.ToDictionary(p => p.Hash, p => p.OperationId);
         }
     }
 }
