@@ -18,6 +18,6 @@
     <ProjectReference Include="..\Lykke.Service.Decred.Api.Repository\Lykke.Service.Decred.Api.Repository.csproj" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="Lykke.Service.BlockchainApi.Contract" Version="11.0.0" />
+    <PackageReference Include="Lykke.Service.BlockchainApi.Contract" Version="12.2.1" />
   </ItemGroup>
 </Project>
