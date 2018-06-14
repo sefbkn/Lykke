@@ -1,6 +1,7 @@
 ﻿using System;
 using Lykke.Service.BlockchainApi.Contract;
 using Lykke.Service.BlockchainApi.Contract.Assets;
+using Lykke.Service.Decred.Api.Common;
 using Lykke.SettingsReader;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,8 +33,11 @@ namespace Lykke.Service.Decred.Api.Controllers
         }
         
         [HttpGet("api/assets")]
-        public PaginationResponse<AssetResponse> GetAssets([FromQuery] int take, [FromQuery] string continuation)
+        public PaginationResponse<AssetResponse> GetAssets([FromQuery] int? take, [FromQuery] string continuation)
         {
+            if(take == null || take < 1)
+                throw new BusinessException(ErrorReason.BadRequest, "Invalid take parameter");
+            
             return PaginationResponse.From(null, new [] { _assetResponse });
         }
         
@@ -43,7 +47,7 @@ namespace Lykke.Service.Decred.Api.Controllers
             if (assetId == _assetResponse.AssetId)
                 return Ok(_assetResponse);
             
-            return NotFound();
+            return NoContent();
         }
     }
 }

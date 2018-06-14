@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Threading.Tasks;
+using Lykke.Service.Decred.Api.Common;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 
@@ -21,20 +22,34 @@ namespace Lykke.Service.Decred.Api.Middleware
             {
                 await _next(context);
             }
-            catch (Exception ex)
+
+            catch (BusinessException ex) when (ex.Reason == ErrorReason.BadRequest)
             {
-                await HandleExceptionAsync(context, ex);
+                await HandleExceptionAsync(context, ex, HttpStatusCode.BadRequest);
+            }
+
+            catch (BusinessException ex) when (ex.Reason == ErrorReason.InvalidAddress)
+            {
+                await HandleExceptionAsync(context, ex, HttpStatusCode.BadRequest);
+            }
+
+            catch (ArgumentException ex)
+            {
+                await HandleExceptionAsync(context, ex, HttpStatusCode.BadRequest);
+            }
+
+            catch (JsonReaderException ex)
+            {
+                await HandleExceptionAsync(context, ex, HttpStatusCode.BadRequest);
             }
         }
 
-        private static Task HandleExceptionAsync(HttpContext context, Exception exception)
+        private static Task HandleExceptionAsync(HttpContext context,  Exception exception, HttpStatusCode statusCode)
         {
-            var code = HttpStatusCode.InternalServerError;
-            var result = JsonConvert.SerializeObject(new { error = exception.Message, stacktrace = exception.ToString() });
+            var result = JsonConvert.SerializeObject(new { errorMessage = exception.ToString() });
             context.Response.ContentType = "application/json";
-            context.Response.StatusCode = (int) code;
+            context.Response.StatusCode = (int) statusCode;
             return context.Response.WriteAsync(result);
         }
     }
 }
-
