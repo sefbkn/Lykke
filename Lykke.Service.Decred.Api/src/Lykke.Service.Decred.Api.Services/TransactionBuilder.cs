@@ -77,15 +77,38 @@ namespace Lykke.Service.Decred.Api.Services
                     output.BlockIndex,
                     output.PkScript
                 )).ToArray();
-            
-            // The amount that is being requested.
-            var amount = long.Parse(request.Amount);
+                        
 
             long estFee = 0;
             long totalSpent = 0;
             var consumedInputs = new List<Transaction.Input>();
             var feePerKb = await _feeService.GetFeePerKb();
-                        
+            
+            // The amount that is being requested.
+            var amount = long.Parse(request.Amount);
+
+            // Do not build transactions that are too small.
+            if (TransactionRules.IsDustAmount(amount, Transaction.PayToPubKeyHashPkScriptSize, new Amount(feePerKb)))
+                throw new BusinessException(ErrorReason.AmountTooSmall, "Amount is dust");
+
+            bool HasEnoughInputs(out long fee)
+            {
+                var calculateWithChange = false;
+                while (true)
+                {
+                    var changeCount = calculateWithChange ? 1 : 0;
+                    fee = _feeService.CalculateFee(feePerKb, consumedInputs.Count, numOutputs + changeCount, feeFactor);
+                    var estAmount = amount + (request.IncludeFee ? 0 : fee);
+                    
+                    if (totalSpent < estAmount) return false;
+                    if (totalSpent == estAmount) return true;
+                    if (totalSpent > estAmount && calculateWithChange) return true;
+                    
+                    // Loop one more time but make sure change is accounted for this time.
+                    if (totalSpent > estAmount) calculateWithChange = true;
+                }
+            }
+
             // Accumulate inputs until we have enough to cover the cost
             // of the amount + fee
             foreach (var input in allInputs)
@@ -97,36 +120,20 @@ namespace Lykke.Service.Decred.Api.Services
                 consumedInputs.Add(input);
                 totalSpent += input.InputAmount;
 
-                estFee = _feeService.CalculateFee(feePerKb, consumedInputs.Count, numOutputs, feeFactor);
-                var estAmount = amount + (request.IncludeFee ? 0 : estFee);
-                
-                if (totalSpent == estAmount)
-                {
+                if (HasEnoughInputs(out estFee))
                     break;
-                }
-                
-                if (totalSpent > estAmount)
-                {
-                    // If there will be change, adjust fee calculation to account for this.
-                    estFee = _feeService.CalculateFee(feePerKb, consumedInputs.Count, numOutputs+1, feeFactor);
-                    break;
-                }
             }            
             
             // If all inputs do not have enough value to fund the transaction.
             if(totalSpent < amount + (request.IncludeFee ? 0 : estFee))
                 throw new BusinessException(ErrorReason.NotEnoughBalance, "Address balance too low");
-                        
+            
             // The fee either comes from the change or the sent amount
             var send = amount - (request.IncludeFee ? estFee : 0 );
             var change = (totalSpent - amount) - (request.IncludeFee ? 0 : estFee);
 
-            // Do not build transactions that are too small.
-            if (TransactionRules.IsDustAmount(change, Transaction.PayToPubKeyHashPkScriptSize, new Amount(feePerKb)))
-                throw new BusinessException(ErrorReason.AmountTooSmall, "Amount is dust");
-
             // If all inputs do not have enough value to fund the transaction, throw error.
-            if(request.IncludeFee &&  estFee > amount)
+            if(request.IncludeFee && estFee > amount)
                 throw new BusinessException(ErrorReason.AmountTooSmall, "Amount not enough to include fee");
 
             // If all inputs do not have enough value to fund the transaction, throw error.

@@ -41,7 +41,6 @@ namespace Lykke.Service.Decred.Api.Middleware
             catch (JsonReaderException ex)
             {
                 await HandleExceptionAsync(context, ex, HttpStatusCode.BadRequest);
-
             }
         }
 
