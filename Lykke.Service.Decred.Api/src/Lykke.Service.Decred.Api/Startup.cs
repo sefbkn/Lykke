@@ -165,8 +165,6 @@ namespace Lykke.Service.Decred.Api
 
             app.UseMiddleware(typeof(ApiErrorHandler));
             app.UseLykkeForwardedHeaders();
-            app.UseLykkeMiddleware("LykkeService", ex => new { Message = "Technical problem" });
-
             app.UseMvc();
             
             appLifetime.ApplicationStarted.Register(() => StartApplication().GetAwaiter().GetResult());

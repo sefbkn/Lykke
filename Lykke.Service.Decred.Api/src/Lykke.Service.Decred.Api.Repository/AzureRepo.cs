@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AzureStorage;
@@ -12,6 +13,7 @@ namespace Lykke.Service.Decred.Api.Repository
     {
         private const int RecordNotFoundStatus = 404;
         private const int DuplicateRecordStatus = 409;
+        private const int InvalidRequestStatus = 500;
 
         private readonly INoSQLTableStorage<T> _azureRepo;
         
@@ -45,7 +47,7 @@ namespace Lykke.Service.Decred.Api.Repository
         {
             try
             {
-                if(upsert)
+                if (upsert)
                     await _azureRepo.InsertOrReplaceAsync(value);
                 else
                     await _azureRepo.InsertAsync(value);
@@ -53,6 +55,10 @@ namespace Lykke.Service.Decred.Api.Repository
             catch (StorageException e) when (e.RequestInformation.HttpStatusCode == DuplicateRecordStatus)
             {
                 throw new BusinessException(ErrorReason.DuplicateRecord, $"{typeof(T)} already being observed", e);
+            }
+            catch (StorageException e) when (e.RequestInformation.HttpStatusCode == InvalidRequestStatus)
+            {
+                throw new BusinessException(ErrorReason.BadRequest, $"{typeof(T)} Bad request", e);
             }
         }
 
@@ -67,11 +73,24 @@ namespace Lykke.Service.Decred.Api.Repository
             {
                 throw new BusinessException(ErrorReason.RecordNotFound, $"{typeof(T)} is not being observed", ex);
             }
+            
+            catch (StorageException e) when (e.RequestInformation.HttpStatusCode == InvalidRequestStatus)
+            {
+                throw new BusinessException(ErrorReason.BadRequest, $"{typeof(T)} Bad request", e);
+            }
         }
 
         public async Task<(IEnumerable<T> Entities, string ContinuationToken)> GetDataWithContinuationTokenAsync(int take, string continuation)
         {
-            return await _azureRepo.GetDataWithContinuationTokenAsync(take, continuation);
+            try
+            {
+                return await _azureRepo.GetDataWithContinuationTokenAsync(take, continuation);
+            }
+            catch (Exception ex)
+            {
+                throw new BusinessException(ErrorReason.BadRequest, 
+                    $"Invalid take or continuation token", ex);
+            }
         }
     }
 }

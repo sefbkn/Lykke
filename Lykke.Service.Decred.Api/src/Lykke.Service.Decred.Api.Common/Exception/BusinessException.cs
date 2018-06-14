@@ -6,7 +6,8 @@ namespace Lykke.Service.Decred.Api.Common
     {
         public ErrorReason Reason { get; }
 
-        public BusinessException(ErrorReason reason, string message = "", Exception innerException = null) : base(message, innerException)
+        public BusinessException(ErrorReason reason, string message = null, Exception innerException = null) 
+            : base(message ?? reason.ToString(), innerException)
         {
             Reason = reason;
         }
@@ -20,5 +21,6 @@ namespace Lykke.Service.Decred.Api.Common
         InvalidAddress = 2,
         AmountTooSmall = 3,
         NotEnoughBalance = 4,
+        BadRequest = 5
     }
 }

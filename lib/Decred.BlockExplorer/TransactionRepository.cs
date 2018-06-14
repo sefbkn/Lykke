@@ -1,4 +1,5 @@
-﻿using System.Data;
+﻿using System;
+using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
@@ -51,13 +52,19 @@ namespace Decred.BlockExplorer
         
         public async Task<long?> GetTransactionRowId(string hash)
         {
+            if(hash == null || hash.Length != 32)
+                throw new ArgumentException("hash argument is invalid");
+            
             return await _dbConnection.ExecuteScalarAsync<long?>(
                 "select id from transactions where tx_hash = @txHash",
                 new { txHash = hash });
         }
 
         public async Task<TxHistoryResult[]> GetTransactionsFromAddress(string address, int take, string afterHash)
-        {            
+        {
+            if(take < 1)
+                throw new ArgumentException("Take argument must be >= 1");
+
             const string query = 
                 @"select
                     from_addr.address as FromAddress,
@@ -85,7 +92,10 @@ namespace Decred.BlockExplorer
         }
         
         public async Task<TxHistoryResult[]> GetTransactionsToAddress(string address, int take, string afterHash)
-        {            
+        {
+            if(take < 1)
+                throw new ArgumentException("Take argument must be >= 1");
+            
             const string query = 
                 @"select
                     from_addr.address as FromAddress,

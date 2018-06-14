@@ -22,27 +22,35 @@ namespace Lykke.Service.Decred.Api.Middleware
             {
                 await _next(context);
             }
-            
+
+            catch (BusinessException ex) when (ex.Reason == ErrorReason.BadRequest)
+            {
+                await HandleExceptionAsync(context, ex, HttpStatusCode.BadRequest);
+            }
+
             catch (BusinessException ex) when (ex.Reason == ErrorReason.InvalidAddress)
             {
-                context.Response.StatusCode = (int) HttpStatusCode.Conflict;
-                await HandleExceptionAsync(context, ex);
+                await HandleExceptionAsync(context, ex, HttpStatusCode.BadRequest);
             }
-            
-            catch (Exception ex)
+
+            catch (ArgumentException ex)
             {
-                await HandleExceptionAsync(context, ex);
+                await HandleExceptionAsync(context, ex, HttpStatusCode.BadRequest);
+            }
+
+            catch (JsonReaderException ex)
+            {
+                await HandleExceptionAsync(context, ex, HttpStatusCode.BadRequest);
+
             }
         }
 
-        private static Task HandleExceptionAsync(HttpContext context, Exception exception)
+        private static Task HandleExceptionAsync(HttpContext context,  Exception exception, HttpStatusCode statusCode)
         {
-            var code = HttpStatusCode.InternalServerError;
-            var result = JsonConvert.SerializeObject(new { error = exception.Message, stacktrace = exception.ToString() });
+            var result = JsonConvert.SerializeObject(new { errorMessage = exception.ToString() });
             context.Response.ContentType = "application/json";
-            context.Response.StatusCode = (int) code;
+            context.Response.StatusCode = (int) statusCode;
             return context.Response.WriteAsync(result);
         }
     }
 }
-
