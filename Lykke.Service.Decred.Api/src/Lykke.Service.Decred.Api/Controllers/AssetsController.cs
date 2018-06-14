@@ -43,7 +43,7 @@ namespace Lykke.Service.Decred.Api.Controllers
             if (assetId == _assetResponse.AssetId)
                 return Ok(_assetResponse);
             
-            return NotFound();
+            return NoContent();
         }
     }
 }

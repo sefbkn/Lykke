@@ -39,10 +39,6 @@ namespace Lykke.Service.Decred.Api.Controllers
                 Response.StatusCode = (int) HttpStatusCode.Conflict;
                 return Json(new {errorMessage = "Address already being observed"});
             }
-            catch (Exception e)
-            {
-                return await GenericErrorResponse(e, Guid.Empty, HttpStatusCode.InternalServerError);
-            }
         }
         
         /// <summary>
@@ -61,10 +57,6 @@ namespace Lykke.Service.Decred.Api.Controllers
             catch (BusinessException e) when (e.Reason == ErrorReason.RecordNotFound)
             {
                 return NoContent();
-            }
-            catch (Exception e)
-            {
-                return await GenericErrorResponse(e, Guid.Empty, HttpStatusCode.InternalServerError);
             }
         }
 

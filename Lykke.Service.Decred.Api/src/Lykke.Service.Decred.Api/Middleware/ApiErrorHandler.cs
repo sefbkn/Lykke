@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Net;
 using System.Threading.Tasks;
+using Lykke.Service.Decred.Api.Common;
 using Microsoft.AspNetCore.Http;
 using Newtonsoft.Json;
 
@@ -21,6 +22,13 @@ namespace Lykke.Service.Decred.Api.Middleware
             {
                 await _next(context);
             }
+            
+            catch (BusinessException ex) when (ex.Reason == ErrorReason.InvalidAddress)
+            {
+                context.Response.StatusCode = (int) HttpStatusCode.Conflict;
+                await HandleExceptionAsync(context, ex);
+            }
+            
             catch (Exception ex)
             {
                 await HandleExceptionAsync(context, ex);
