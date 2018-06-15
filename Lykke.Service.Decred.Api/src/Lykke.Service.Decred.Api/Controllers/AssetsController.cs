@@ -37,6 +37,8 @@ namespace Lykke.Service.Decred.Api.Controllers
         {
             if(take == null || take < 1)
                 throw new BusinessException(ErrorReason.BadRequest, "Invalid take parameter");
+            if(continuation != null)
+                throw new BusinessException(ErrorReason.BadRequest, "Continuation token not expected at this endpoint");
             
             return PaginationResponse.From(null, new [] { _assetResponse });
         }
@@ -46,7 +48,7 @@ namespace Lykke.Service.Decred.Api.Controllers
         {
             if (assetId == _assetResponse.AssetId)
                 return Ok(_assetResponse);
-            
+
             return NoContent();
         }
     }

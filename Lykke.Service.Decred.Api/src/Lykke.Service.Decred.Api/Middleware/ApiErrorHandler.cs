@@ -42,6 +42,11 @@ namespace Lykke.Service.Decred.Api.Middleware
             {
                 await HandleExceptionAsync(context, ex, HttpStatusCode.BadRequest);
             }
+
+            catch (Paymetheus.Decred.Wallet.AddressException ex)
+            {
+                await HandleExceptionAsync(context, ex, HttpStatusCode.BadRequest);
+            }
         }
 
         private static Task HandleExceptionAsync(HttpContext context,  Exception exception, HttpStatusCode statusCode)

@@ -40,6 +40,9 @@ namespace Lykke.Service.Decred.Api.Controllers
         [HttpPost("api/transactions/single")]
         public async Task<IActionResult> BuildSingleTransaction([FromBody] BuildSingleTransactionRequest request)
         {
+            if (request.OperationId == Guid.Empty)
+                throw new BusinessException(ErrorReason.BadRequest, "operation id invalid");
+
             // Do not scale the fee
             const int feeFactor = 1;
             return await BuildTxInternal(request, feeFactor);
@@ -47,6 +50,7 @@ namespace Lykke.Service.Decred.Api.Controllers
         
         private async Task<IActionResult> BuildTxInternal(BuildSingleTransactionRequest request, decimal feeFactor)
         {
+            
             try
             {
                 var response = await _txBuilderService.BuildSingleTransactionAsync(request, feeFactor);
@@ -109,6 +113,9 @@ namespace Lykke.Service.Decred.Api.Controllers
         [HttpGet("api/transactions/broadcast/single/{operationId}")]
         public async Task<IActionResult> GetBroadcastedSingleTx(Guid operationId)
         {
+            if(operationId == Guid.Empty)
+                throw new BusinessException(ErrorReason.BadRequest, "Invalid operation id");
+                
             try
             {
                 // Retrieves a broadcasted transaction
@@ -117,7 +124,7 @@ namespace Lykke.Service.Decred.Api.Controllers
             }
             catch (BusinessException e) when (e.Reason == ErrorReason.RecordNotFound)
             {
-                return NoContent();
+                return NotFound();
             }
 
             catch (Exception e)
