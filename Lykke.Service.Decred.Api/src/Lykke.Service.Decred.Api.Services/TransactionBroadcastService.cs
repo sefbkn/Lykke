@@ -163,7 +163,6 @@ namespace Lykke.Service.Decred.Api.Services
             await _broadcastTxRepo.DeleteAsync(operation);
         }
         
-        
         private async Task SaveBroadcastedTransaction(BroadcastedTransaction broadcastedTx)
         {            
             // Store tx Hash to OperationId lookup

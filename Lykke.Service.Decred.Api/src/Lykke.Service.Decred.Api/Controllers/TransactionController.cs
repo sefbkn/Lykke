@@ -40,9 +40,6 @@ namespace Lykke.Service.Decred.Api.Controllers
         [HttpPost("api/transactions/single")]
         public async Task<IActionResult> BuildSingleTransaction([FromBody] BuildSingleTransactionRequest request)
         {
-            if (request.OperationId == Guid.Empty)
-                throw new BusinessException(ErrorReason.BadRequest, "Operation id is invalid");
-
             // Do not scale the fee
             const int feeFactor = 1;
             return await BuildTxInternal(request, feeFactor);

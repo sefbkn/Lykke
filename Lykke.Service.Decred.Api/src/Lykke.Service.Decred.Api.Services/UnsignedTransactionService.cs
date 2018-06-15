@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Lykke.Service.BlockchainApi.Contract.Transactions;
 using Lykke.Service.Decred.Api.Common;
 using Lykke.Service.Decred.Api.Common.Entity;
@@ -29,6 +30,9 @@ namespace Lykke.Service.Decred.Api.Services
         public async Task<BuildTransactionResponse> BuildSingleTransactionAsync(BuildSingleTransactionRequest request,
             decimal feeFactor)
         {
+            if (request.OperationId == Guid.Empty)
+                throw new BusinessException(ErrorReason.BadRequest, "Operation id is invalid");
+            
             var unsignedTx = await _unsignedTxRepo.GetAsync(request.OperationId.ToString());
             if (unsignedTx?.ResponseJson != null)
                 return JsonConvert.DeserializeObject<BuildTransactionResponse>(unsignedTx.ResponseJson);
