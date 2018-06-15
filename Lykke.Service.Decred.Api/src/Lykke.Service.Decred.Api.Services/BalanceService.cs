@@ -70,15 +70,16 @@ namespace Lykke.Service.Decred.Api.Services
             var result = await _observableWalletRepository.GetDataWithContinuationTokenAsync(take, continuation);            
             var addresses = result.Entities.Select(e => e.Address).ToArray();
             var blockHeight = await _dcrdClient.GetMaxConfirmedBlockHeight();
+            var minConfirmations = _dcrdClient.GetConfirmationDepth();
             
             var balances = 
                (from balance in await _addressRepository.GetAddressBalancesAsync(addresses, blockHeight)
                 select new WalletBalanceContract
                 {
                     AssetId = "DCR",
-                    Block = balance.Block,
+                    Block = balance.Block + minConfirmations,
                     Address = balance.Address,
-                    Balance = balance.Balance.ToString(),
+                    Balance = balance.Balance.ToString()
                 }).ToArray();
             
             return new PaginationResponse<WalletBalanceContract> { 

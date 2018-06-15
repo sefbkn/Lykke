@@ -9,6 +9,7 @@ namespace DcrdClient
         
         Task<GetBestBlockResult> GetBestBlockAsync();
         Task<long> GetMaxConfirmedBlockHeight();
+        int GetConfirmationDepth();
         
         // Returns estimated fee as dcr/kb
         Task<decimal> EstimateFeeAsync(int numBlocks);

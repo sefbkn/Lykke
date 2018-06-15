@@ -68,6 +68,11 @@ namespace DcrdClient
             return result.Height - _minConfirmations;
         }
 
+        public int GetConfirmationDepth()
+        {
+            return _minConfirmations;
+        }
+
         public async Task<decimal> EstimateFeeAsync(int numBlocks)
         {
             var result = await Perform<decimal>("estimatefee", numBlocks);
