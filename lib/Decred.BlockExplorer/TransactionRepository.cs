@@ -52,9 +52,7 @@ namespace Decred.BlockExplorer
         
         public async Task<long?> GetTransactionRowId(string hash)
         {
-            if(hash == null || hash.Length != 32)
-                throw new ArgumentException("hash argument is invalid");
-            
+            if(hash == null) return null;
             return await _dbConnection.ExecuteScalarAsync<long?>(
                 "select id from transactions where tx_hash = @txHash",
                 new { txHash = hash });

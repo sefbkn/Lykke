@@ -47,6 +47,7 @@ namespace Lykke.Service.Decred.Api.Controllers
         
         private async Task<IActionResult> BuildTxInternal(BuildSingleTransactionRequest request, decimal feeFactor)
         {
+
             try
             {
                 var response = await _txBuilderService.BuildSingleTransactionAsync(request, feeFactor);
@@ -72,16 +73,6 @@ namespace Lykke.Service.Decred.Api.Controllers
                     transactionContext = (string) null
                 });
             }
-
-            catch (Exception exception)
-            {
-                Response.StatusCode = (int) HttpStatusCode.InternalServerError;
-                return Json(new
-                {
-                    errorCode = exception.ToString(),
-                    transactionContext = (string) null
-                });
-            }
         }
         
         [HttpPost("api/transactions/broadcast")]
@@ -99,16 +90,14 @@ namespace Lykke.Service.Decred.Api.Controllers
                 // If this operationid was already broadcast, return 409 conflict.
                 return await GenericErrorResponse(ex, request.OperationId, HttpStatusCode.Conflict);
             }
-            
-            catch (Exception ex)
-            {
-                return await GenericErrorResponse(ex, request.OperationId, HttpStatusCode.InternalServerError);
-            }
         }
         
         [HttpGet("api/transactions/broadcast/single/{operationId}")]
         public async Task<IActionResult> GetBroadcastedSingleTx(Guid operationId)
         {
+            if(operationId == Guid.Empty)
+                throw new BusinessException(ErrorReason.BadRequest, "Invalid operation id");
+                
             try
             {
                 // Retrieves a broadcasted transaction
@@ -117,18 +106,21 @@ namespace Lykke.Service.Decred.Api.Controllers
             }
             catch (BusinessException e) when (e.Reason == ErrorReason.RecordNotFound)
             {
-                return NoContent();
+                return NotFound();
             }
 
             catch (Exception e)
             {
-                return await GenericErrorResponse(e, operationId, HttpStatusCode.InternalServerError);
+                return await GenericErrorResponse(e, operationId, HttpStatusCode.BadRequest);
             }
         }
 
         [HttpDelete("api/transactions/broadcast/{operationId}")]
         public async Task<IActionResult> RemoveObservableOperation(Guid operationId)
-        {            
+        {
+            if (operationId == Guid.Empty)
+                throw new BusinessException(ErrorReason.BadRequest, "Operation id is invalid");
+
             try
             {
                 await _txBroadcastService.UnsubscribeBroadcastedTx(operationId);                
