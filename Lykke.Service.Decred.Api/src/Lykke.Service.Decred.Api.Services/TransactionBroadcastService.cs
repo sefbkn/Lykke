@@ -66,7 +66,12 @@ namespace Lykke.Service.Decred.Api.Services
         /// <returns></returns>
         /// <exception cref="TransactionBroadcastException"></exception>
         public async Task Broadcast(Guid operationId, string hexTransaction)
-        {
+        {               
+            if (operationId == Guid.Empty)
+                throw new BusinessException(ErrorReason.BadRequest, "Operation id is invalid");
+            if (string.IsNullOrWhiteSpace(hexTransaction))
+                throw new BusinessException(ErrorReason.BadRequest, "SignedTransaction is invalid");
+            
             var txBytes = HexUtil.ToByteArray(hexTransaction);
             var msgTx = new MsgTx();
             msgTx.Decode(txBytes);
@@ -103,6 +108,9 @@ namespace Lykke.Service.Decred.Api.Services
         /// <exception cref="BusinessException"></exception>
         public async Task<BroadcastedSingleTransactionResponse> GetBroadcastedTxSingle(Guid operationId)
         {
+            if (operationId == Guid.Empty)
+                throw new BusinessException(ErrorReason.BadRequest, "Operation id is invalid");
+
             // Retrieve the broadcasted transaction and deserialize it.
             var broadcastedTransaction = await GetBroadcastedTransaction(operationId);
             var transaction = new MsgTx();
@@ -140,6 +148,9 @@ namespace Lykke.Service.Decred.Api.Services
 
         public async Task UnsubscribeBroadcastedTx(Guid operationId)
         {
+            if (operationId == Guid.Empty)
+                throw new BusinessException(ErrorReason.BadRequest, "Operation id is invalid");
+
             var operation = await _broadcastTxRepo.GetAsync(operationId.ToString());
             if (operation == null)
                 throw new BusinessException(ErrorReason.RecordNotFound, "Record not found");
@@ -170,6 +181,9 @@ namespace Lykke.Service.Decred.Api.Services
 
         private async Task<BroadcastedTransaction> GetBroadcastedTransaction(Guid operationId)
         {
+            if (operationId == Guid.Empty)
+                throw new BusinessException(ErrorReason.BadRequest, "Operation id is invalid");
+
             // Retrieve previously saved BroadcastedTransaction record.
             var broadcastedTx = await _broadcastTxRepo.GetAsync(operationId.ToString());
             return broadcastedTx ?? throw new BusinessException(ErrorReason.RecordNotFound, "Record not found");

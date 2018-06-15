@@ -93,11 +93,6 @@ namespace Lykke.Service.Decred.Api.Controllers
                 // If this operationid was already broadcast, return 409 conflict.
                 return await GenericErrorResponse(ex, request.OperationId, HttpStatusCode.Conflict);
             }
-            
-            catch (Exception ex)
-            {
-                return await GenericErrorResponse(ex, request.OperationId, HttpStatusCode.InternalServerError);
-            }
         }
         
         [HttpGet("api/transactions/broadcast/single/{operationId}")]
@@ -125,7 +120,10 @@ namespace Lykke.Service.Decred.Api.Controllers
 
         [HttpDelete("api/transactions/broadcast/{operationId}")]
         public async Task<IActionResult> RemoveObservableOperation(Guid operationId)
-        {            
+        {
+            if (operationId == Guid.Empty)
+                throw new BusinessException(ErrorReason.BadRequest, "Operation id is invalid");
+
             try
             {
                 await _txBroadcastService.UnsubscribeBroadcastedTx(operationId);                
