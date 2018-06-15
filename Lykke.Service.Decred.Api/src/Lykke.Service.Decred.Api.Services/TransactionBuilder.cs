@@ -50,6 +50,17 @@ namespace Lykke.Service.Decred.Api.Services
         /// <exception cref="BusinessException"></exception>
         public async Task<BuildTransactionResponse> BuildSingleTransactionAsync(BuildSingleTransactionRequest request, decimal feeFactor)
         {
+            if(string.IsNullOrWhiteSpace(request.FromAddress))
+                throw new BusinessException(ErrorReason.BadRequest, "FromAddress missing");
+            if(string.IsNullOrWhiteSpace(request.ToAddress))
+                throw new BusinessException(ErrorReason.BadRequest, "ToAddress missing");
+            if(!long.TryParse(request.Amount, out var amount) || amount <= 0)
+                throw new BusinessException(ErrorReason.BadRequest, $"Invalid amount {amount}");
+
+            var feePerKb = await _feeService.GetFeePerKb();
+            if (TransactionRules.IsDustAmount(amount, Transaction.PayToPubKeyHashPkScriptSize, new Amount(feePerKb)))
+                throw new BusinessException(ErrorReason.AmountTooSmall, "Amount is dust");
+
             const uint sequence = uint.MaxValue;
             const int outputVersion = 0;
             const int lockTime = 0;
@@ -77,19 +88,10 @@ namespace Lykke.Service.Decred.Api.Services
                     output.BlockIndex,
                     output.PkScript
                 )).ToArray();
-                        
-
+            
             long estFee = 0;
             long totalSpent = 0;
             var consumedInputs = new List<Transaction.Input>();
-            var feePerKb = await _feeService.GetFeePerKb();
-            
-            // The amount that is being requested.
-            var amount = long.Parse(request.Amount);
-
-            // Do not build transactions that are too small.
-            if (TransactionRules.IsDustAmount(amount, Transaction.PayToPubKeyHashPkScriptSize, new Amount(feePerKb)))
-                throw new BusinessException(ErrorReason.AmountTooSmall, "Amount is dust");
 
             bool HasEnoughInputs(out long fee)
             {

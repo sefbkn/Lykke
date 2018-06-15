@@ -47,6 +47,11 @@ namespace Lykke.Service.Decred.Api.Middleware
             {
                 await HandleExceptionAsync(context, ex, HttpStatusCode.BadRequest);
             }
+            
+            catch (Exception ex)
+            {
+                await HandleExceptionAsync(context, ex, HttpStatusCode.InternalServerError);
+            }
         }
 
         private static Task HandleExceptionAsync(HttpContext context,  Exception exception, HttpStatusCode statusCode)

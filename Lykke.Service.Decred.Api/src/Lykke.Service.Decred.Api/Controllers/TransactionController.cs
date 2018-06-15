@@ -41,7 +41,7 @@ namespace Lykke.Service.Decred.Api.Controllers
         public async Task<IActionResult> BuildSingleTransaction([FromBody] BuildSingleTransactionRequest request)
         {
             if (request.OperationId == Guid.Empty)
-                throw new BusinessException(ErrorReason.BadRequest, "operation id invalid");
+                throw new BusinessException(ErrorReason.BadRequest, "Operation id is invalid");
 
             // Do not scale the fee
             const int feeFactor = 1;
@@ -50,7 +50,7 @@ namespace Lykke.Service.Decred.Api.Controllers
         
         private async Task<IActionResult> BuildTxInternal(BuildSingleTransactionRequest request, decimal feeFactor)
         {
-            
+
             try
             {
                 var response = await _txBuilderService.BuildSingleTransactionAsync(request, feeFactor);
@@ -73,16 +73,6 @@ namespace Lykke.Service.Decred.Api.Controllers
                 return Json(new
                 {
                     errorCode = "notEnoughBalance",
-                    transactionContext = (string) null
-                });
-            }
-
-            catch (Exception exception)
-            {
-                Response.StatusCode = (int) HttpStatusCode.InternalServerError;
-                return Json(new
-                {
-                    errorCode = exception.ToString(),
                     transactionContext = (string) null
                 });
             }
@@ -129,7 +119,7 @@ namespace Lykke.Service.Decred.Api.Controllers
 
             catch (Exception e)
             {
-                return await GenericErrorResponse(e, operationId, HttpStatusCode.InternalServerError);
+                return await GenericErrorResponse(e, operationId, HttpStatusCode.BadRequest);
             }
         }
 
