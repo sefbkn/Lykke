@@ -1,8 +1,10 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
+using NDecred.Common;
 
 namespace Decred.BlockExplorer
 {
@@ -34,6 +36,13 @@ namespace Decred.BlockExplorer
         Task<UnspentTxOutput[]> GetUnspentTxOutputs(string address);
 
         /// <summary>
+        /// Returns 
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        Task<UnspentTxOutput[]> GetMempoolUtxos(string address);
+
+        /// <summary>
         /// Determines if a transaction is known, given its hash.
         /// </summary>
         /// <param name="transactionHash"></param>
@@ -43,10 +52,12 @@ namespace Decred.BlockExplorer
     
     public class TransactionRepository : ITransactionRepository
     {
+        private readonly IDcrdataHttpClient _httpClient;
         private readonly IDbConnection _dbConnection;
 
-        public TransactionRepository(IDbConnection dbConnection)
+        public TransactionRepository(IDcrdataHttpClient httpClient, IDbConnection dbConnection)
         {
+            _httpClient = httpClient;
             _dbConnection = dbConnection;
         }
         
@@ -82,6 +93,8 @@ namespace Decred.BlockExplorer
                     tx.block_height, tx.block_time
                 order by to_addr.funding_tx_row_id asc
                 limit @take";
+            
+            
 
             var minTxIdExclusive = await GetTransactionRowId(afterHash) ?? 0;
             var results = await _dbConnection.QueryAsync<TxHistoryResult>(query,
@@ -139,14 +152,41 @@ namespace Decred.BlockExplorer
                     addr.address = @address
                     and addr.spending_tx_hash is null
                     and vouts.script_type = 'pubkeyhash'";
-
-            var result = 
-                await _dbConnection.QueryAsync<UnspentTxOutput>(
+            
+            var results = 
+                (await _dbConnection.QueryAsync<UnspentTxOutput>(
                     query,
                     new { address = address }
-                );
+                )).ToArray();
+            
+            return results;
+        }
 
-            return result.ToArray();
+        public async Task<UnspentTxOutput[]> GetMempoolUtxos(string address)
+        {
+            var apiResults =  await _httpClient.GetTopTransactionsByAddress(address);            
+            return apiResults.AddressTransactions
+                .Where(a => a.Confirmations == 0)
+                .AsParallel()
+                .Select(async a =>
+                {
+                    var rawTx = await _httpClient.GetRawMempoolTransaction(a.TxId);
+                    var txBytes = HexUtil.ToByteArray(rawTx);
+                    var msgTx = new MsgTx();
+                    msgTx.Decode(txBytes);
+
+                    return msgTx.TxOut.Select((txout, index) => new UnspentTxOutput
+                    {
+                        BlockHeight = 0,
+                        BlockIndex = 4294967295,
+                        Hash = a.TxId,
+                        OutputIndex = (uint) index,
+                        OutputValue = txout.Value,
+                        OutputVersion = txout.Version,
+                        PkScript = txout.PkScript,
+                        Tree = 0
+                    });
+                }).SelectMany(x => x.Result).ToArray();
         }
 
         public async Task<TxInfo> GetTxInfoByHash(string transactionHash, long blockHeight)

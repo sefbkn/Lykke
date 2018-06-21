@@ -8,4 +8,7 @@
     <Content Include="data/*" CopyToPublishDirectory="Always" />
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\NDecred.Common\Decred.Common.csproj" />
+  </ItemGroup>
 </Project>

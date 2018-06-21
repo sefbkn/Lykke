@@ -41,6 +41,40 @@ namespace Lykke.Service.Decred.Api.Services
         }
         
         /// <summary>
+        /// Retrieves all utxos for a single address found in dcrdata's db + mempool.
+        /// Performs basic checking to prevent double-spending of mempool transactions.
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        private IEnumerable<Transaction.Input> GetUtxosForAddress(string address)
+        {
+            const uint sequence = uint.MaxValue;
+
+            var allUtxos = Task.WhenAll(
+                _txRepo.GetUnspentTxOutputs(address),
+                _txRepo.GetMempoolUtxos(address)
+            ).Result.SelectMany(x => x);
+            
+            // TODO: If any outpoint is found as the input to another, remove it.
+            // Need to include the outpoint in 
+            
+            // Get all unspent transaction outputs to address
+            // and map as inputs to new transaction
+            return 
+                from output in allUtxos
+                let txHash = new Blake256Hash(HexUtil.ToByteArray(output.Hash).Reverse().ToArray())
+                let outpoint = new Transaction.OutPoint(txHash, output.OutputIndex, output.Tree)
+                select new Transaction.Input(
+                    outpoint,
+                    sequence,
+                    output.OutputValue,
+                    output.BlockHeight,
+                    output.BlockIndex,
+                    output.PkScript
+                );
+        }
+
+        /// <summary>
         /// Builds a transaction that sends value from one address to another.
         /// Change is spent to the source address, if necessary.
         /// </summary>
@@ -61,7 +95,6 @@ namespace Lykke.Service.Decred.Api.Services
             if (TransactionRules.IsDustAmount(amount, Transaction.PayToPubKeyHashPkScriptSize, new Amount(feePerKb)))
                 throw new BusinessException(ErrorReason.AmountTooSmall, "Amount is dust");
 
-            const uint sequence = uint.MaxValue;
             const int outputVersion = 0;
             const int lockTime = 0;
             const int expiry = 0;
@@ -73,21 +106,7 @@ namespace Lykke.Service.Decred.Api.Services
             // Lykke api doesn't have option to specify a change address.
             var changeAddress = Address.Decode(request.FromAddress);
             var toAddress = Address.Decode(request.ToAddress);
-
-            // Get all unspent transaction outputs to address
-            // and map as inputs to new transaction
-            var allInputs = 
-               (from output in await _txRepo.GetUnspentTxOutputs(request.FromAddress)
-                let txHash = new Blake256Hash(HexUtil.ToByteArray(output.Hash).Reverse().ToArray())
-                let outpoint = new Transaction.OutPoint(txHash, output.OutputIndex, output.Tree)
-                select new Transaction.Input(
-                    outpoint,
-                    sequence,
-                    output.OutputValue,
-                    output.BlockHeight,
-                    output.BlockIndex,
-                    output.PkScript
-                )).ToArray();
+            var allInputs = GetUtxosForAddress(request.FromAddress);
             
             long estFee = 0;
             long totalSpent = 0;
@@ -124,8 +143,8 @@ namespace Lykke.Service.Decred.Api.Services
 
                 if (HasEnoughInputs(out estFee))
                     break;
-            }            
-            
+            }
+                        
             // If all inputs do not have enough value to fund the transaction.
             if(totalSpent < amount + (request.IncludeFee ? 0 : estFee))
                 throw new BusinessException(ErrorReason.NotEnoughBalance, "Address balance too low");
@@ -162,5 +181,6 @@ namespace Lykke.Service.Decred.Api.Services
                 TransactionContext = HexUtil.FromByteArray(newTx.Serialize())
             };
         }
+
     }
 }
