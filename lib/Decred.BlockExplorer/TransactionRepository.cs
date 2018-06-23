@@ -1,8 +1,13 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading.Tasks;
 using Dapper;
+using DcrdClient;
+using NDecred.Common;
+using Paymetheus.Decred.Script;
+using Paymetheus.Decred.Wallet;
 
 namespace Decred.BlockExplorer
 {
@@ -31,7 +36,14 @@ namespace Decred.BlockExplorer
         /// </summary>
         /// <param name="address"></param>
         /// <returns></returns>
-        Task<UnspentTxOutput[]> GetUnspentTxOutputs(string address);
+        Task<UnspentTxOutput[]> GetConfirmedUtxos(string address);
+
+        /// <summary>
+        /// Returns 
+        /// </summary>
+        /// <param name="address"></param>
+        /// <returns></returns>
+        Task<UnspentTxOutput[]> GetMempoolUtxos(string address);
 
         /// <summary>
         /// Determines if a transaction is known, given its hash.
@@ -43,10 +55,12 @@ namespace Decred.BlockExplorer
     
     public class TransactionRepository : ITransactionRepository
     {
+        private readonly IDcrdClient _dcrdClient;
         private readonly IDbConnection _dbConnection;
 
-        public TransactionRepository(IDbConnection dbConnection)
+        public TransactionRepository(IDcrdClient dcrdClient, IDbConnection dbConnection)
         {
+            _dcrdClient = dcrdClient;
             _dbConnection = dbConnection;
         }
         
@@ -82,7 +96,7 @@ namespace Decred.BlockExplorer
                     tx.block_height, tx.block_time
                 order by to_addr.funding_tx_row_id asc
                 limit @take";
-
+            
             var minTxIdExclusive = await GetTransactionRowId(afterHash) ?? 0;
             var results = await _dbConnection.QueryAsync<TxHistoryResult>(query,
                 new { address = address, take = take, minTxId = minTxIdExclusive });
@@ -120,7 +134,7 @@ namespace Decred.BlockExplorer
             return results.ToArray();
         }
         
-        public async Task<UnspentTxOutput[]> GetUnspentTxOutputs(string address)
+        public async Task<UnspentTxOutput[]> GetConfirmedUtxos(string address)
         {
             const string query = 
                 @"select
@@ -139,14 +153,44 @@ namespace Decred.BlockExplorer
                     addr.address = @address
                     and addr.spending_tx_hash is null
                     and vouts.script_type = 'pubkeyhash'";
+            
+            var results = (await _dbConnection.QueryAsync<UnspentTxOutput>(
+                query, new { address = address }
+            )).ToArray();
+            
+            return results;
+        }
 
-            var result = 
-                await _dbConnection.QueryAsync<UnspentTxOutput>(
-                    query,
-                    new { address = address }
-                );
+        public async Task<UnspentTxOutput[]> GetMempoolUtxos(string address)
+        {
+            var transactions =  await _dcrdClient.SearchRawTransactions(address,
+                count: 100,
+                reverse: true);
 
-            return result.ToArray();
+            // Check if an outpoint is the input to another known transaction.
+            bool IsSpent(string txId, TxVout txOut) =>
+                transactions.SelectMany(tx => tx.vin)
+                    .Any(vin => vin.txid == txId && vin.vout == txOut.n);   
+            
+            // Filter out transactions that have a spent outpoint
+            // Only grab transactions that spend to the provided address.
+            return (
+                from transaction in transactions
+                where transaction.confirmations == 0
+                from txOut in transaction.vout
+                where txOut.scriptPubKey.addresses.Contains(address)
+                where !IsSpent(transaction.txid, txOut)
+                select new UnspentTxOutput
+                {
+                    BlockHeight = 0,
+                    BlockIndex = 4294967295,
+                    Hash = transaction.txid,
+                    OutputIndex = (uint) txOut.n,
+                    OutputValue = (long) (txOut.value * (decimal) Math.Pow(10, 8)),
+                    OutputVersion = txOut.version,
+                    PkScript = HexUtil.ToByteArray(txOut.scriptPubKey.hex),
+                    Tree = 0
+                }).ToArray();
         }
 
         public async Task<TxInfo> GetTxInfoByHash(string transactionHash, long blockHeight)

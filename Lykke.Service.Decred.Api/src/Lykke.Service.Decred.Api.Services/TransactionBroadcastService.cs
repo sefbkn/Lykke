@@ -126,7 +126,7 @@ namespace Lykke.Service.Decred.Api.Services
             var txState = knownTx == null
                 ? BroadcastedTransactionState.InProgress
                 : BroadcastedTransactionState.Completed;
-
+            
             // If the tx has been included in a block,
             // use the block height + timestamp from the block
             var txBlockHeight = knownTx?.BlockHeight ?? safeBlockHeight;

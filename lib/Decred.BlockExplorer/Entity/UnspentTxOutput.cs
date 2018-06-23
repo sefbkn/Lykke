@@ -1,4 +1,6 @@
-﻿namespace Decred.BlockExplorer
+﻿using NDecred.Common;
+
+namespace Decred.BlockExplorer
 {
     public class UnspentTxOutput
     {
