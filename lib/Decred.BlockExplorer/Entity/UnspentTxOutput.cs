@@ -12,8 +12,5 @@ namespace Decred.BlockExplorer
         public uint BlockHeight { get; set; }
         public uint BlockIndex { get; set; }
         public byte[] PkScript { get; set; }
-        
-        public int FundingTxIndex { get; set; }
-        public string FundingTxHash { get; set; }
     }
 }

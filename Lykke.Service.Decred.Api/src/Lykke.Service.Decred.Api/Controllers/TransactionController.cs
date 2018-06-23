@@ -47,7 +47,6 @@ namespace Lykke.Service.Decred.Api.Controllers
         
         private async Task<IActionResult> BuildTxInternal(BuildSingleTransactionRequest request, decimal feeFactor)
         {
-
             try
             {
                 var response = await _txBuilderService.BuildSingleTransactionAsync(request, feeFactor);

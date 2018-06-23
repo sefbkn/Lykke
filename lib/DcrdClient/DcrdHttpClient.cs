@@ -62,6 +62,25 @@ namespace DcrdClient
             return result.Result;
         }
         
+        public async Task<SearchRawTransactionsResult[]> SearchRawTransactions(
+            string address, 
+            int skip = 0, 
+            int count = 100,
+            int vinExtra = 0,
+            bool reverse = false)
+        {
+            const int verbose = 1;
+            
+            // Documented in: dcrctl searchrawtransactions
+            // verbose=1 skip=0 count=100 vinextra=0 reverse=false
+            
+            var result = await Perform<SearchRawTransactionsResult[]>("searchrawtransactions", 
+                address, verbose, skip, count, vinExtra, reverse);
+            
+            return result.Result;
+        }
+
+        
         public async Task<long> GetMaxConfirmedBlockHeight()
         {
             var result = await GetBestBlockAsync();

@@ -45,7 +45,8 @@ namespace Lykke.Service.Decred.Api.Services.Test
                 PkScript = new byte[0]
             };
             
-            _mockTxRepo.Setup(m => m.GetUnspentTxOutputs(fromAddr)).ReturnsAsync(new[]{unspentOutput});
+            _mockTxRepo.Setup(m => m.GetConfirmedUtxos(fromAddr)).ReturnsAsync(new[]{unspentOutput});
+            _mockTxRepo.Setup(m => m.GetMempoolUtxos(fromAddr)).ReturnsAsync(new[]{unspentOutput});
             _mockDcrdClient.Setup(m => m.EstimateFeeAsync(It.IsAny<int>())).ReturnsAsync(0.001m);
             _mockBroadcastedOutpointRepo.Setup(m => m.GetAsync($"{unspentOutput.Hash}:1"))
                 .ReturnsAsync((BroadcastedOutpoint) null);

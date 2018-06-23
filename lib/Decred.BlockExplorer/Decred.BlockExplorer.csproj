@@ -9,6 +9,10 @@
     <PackageReference Include="Newtonsoft.Json" Version="11.0.2" />
   </ItemGroup>
   <ItemGroup>
+    <ProjectReference Include="..\DcrdClient\DcrdClient.csproj">
+      <Project>{C83511EB-E5CC-41A5-8683-AF14D0223ADA}</Project>
+      <Name>DcrdClient</Name>
+    </ProjectReference>
     <ProjectReference Include="..\NDecred.Common\Decred.Common.csproj" />
   </ItemGroup>
 </Project>

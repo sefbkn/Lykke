@@ -46,17 +46,20 @@ namespace Lykke.Service.Decred.Api.Services
         /// </summary>
         /// <param name="address"></param>
         /// <returns></returns>
-        private IEnumerable<Transaction.Input> GetUtxosForAddress(string address)
+        private async Task<IEnumerable<Transaction.Input>> GetUtxosForAddress(string address)
         {
             const uint sequence = uint.MaxValue;
-
-            var allUtxos = Task.WhenAll(
-                _txRepo.GetUnspentTxOutputs(address),
-                _txRepo.GetMempoolUtxos(address)
-            ).Result.SelectMany(x => x);
             
-            // TODO: If any outpoint is found as the input to another, remove it.
-            // Need to include the outpoint in 
+            // Grab transactions from dcrdata + the mempool.
+            var confirmedResults = await _txRepo.GetConfirmedUtxos(address);
+            var mempoolResults = await _txRepo.GetMempoolUtxos(address);
+
+            // Remove duplicate outpoints.
+            var allUtxos = confirmedResults.Concat(mempoolResults)
+                .OrderBy(r => r.BlockHeight)
+                .GroupBy(r => new { r.Hash, r.OutputIndex })
+                .Select(g => g.First())
+                .ToArray();
             
             // Get all unspent transaction outputs to address
             // and map as inputs to new transaction
@@ -64,6 +67,11 @@ namespace Lykke.Service.Decred.Api.Services
                 from output in allUtxos
                 let txHash = new Blake256Hash(HexUtil.ToByteArray(output.Hash).Reverse().ToArray())
                 let outpoint = new Transaction.OutPoint(txHash, output.OutputIndex, output.Tree)
+                group new {outpoint, output}
+                by outpoint.ToString() into outpointGroup
+                let element = outpointGroup.First()
+                let outpoint = element.outpoint
+                let output = element.output
                 select new Transaction.Input(
                     outpoint,
                     sequence,
@@ -106,7 +114,7 @@ namespace Lykke.Service.Decred.Api.Services
             // Lykke api doesn't have option to specify a change address.
             var changeAddress = Address.Decode(request.FromAddress);
             var toAddress = Address.Decode(request.ToAddress);
-            var allInputs = GetUtxosForAddress(request.FromAddress);
+            var allInputs = (await GetUtxosForAddress(request.FromAddress)).ToList();
             
             long estFee = 0;
             long totalSpent = 0;
