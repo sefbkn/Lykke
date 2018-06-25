@@ -9,16 +9,22 @@ namespace Lykke.Service.Decred.Api.Controllers
 {
     public class AddressHistoryController : Controller
     {
+        private readonly IAddressValidationService _addressValidator;
         private readonly TransactionHistoryService _transactionHistoryService;
 
-        public AddressHistoryController(TransactionHistoryService transactionHistoryService)
+        public AddressHistoryController(
+            IAddressValidationService addressValidator,
+            TransactionHistoryService transactionHistoryService)
         {
+            _addressValidator = addressValidator;
             _transactionHistoryService = transactionHistoryService;
         }
         
         [HttpPost("api/transactions/history/from/{address}/observation")]
         public async Task<IActionResult> SubscribeAddressFrom(string address)
         {
+            _addressValidator.AssertValid(address);
+            
             try
             {
                 await _transactionHistoryService.SubscribeAddressFrom(address);
@@ -33,6 +39,8 @@ namespace Lykke.Service.Decred.Api.Controllers
         [HttpPost("api/transactions/history/to/{address}/observation")]
         public async Task<IActionResult> SubscribeAddressTo(string address)
         {
+            _addressValidator.AssertValid(address);
+
             try
             {
                 await _transactionHistoryService.SubscribeAddressTo(address);
@@ -47,18 +55,22 @@ namespace Lykke.Service.Decred.Api.Controllers
         [HttpGet("api/transactions/history/from/{address}")]
         public async Task<IEnumerable<HistoricalTransactionContract>> GetTransactionsFromAddress(string address, int take, string afterHash = null)
         {
+            _addressValidator.AssertValid(address);
             return await _transactionHistoryService.GetTransactionsFromAddress(address, take, afterHash);
         }
         
         [HttpGet("api/transactions/history/to/{address}")]
         public async Task<IEnumerable<HistoricalTransactionContract>> GetTransactionsToAddress(string address, int take, string afterHash = null)
         {
+            _addressValidator.AssertValid(address);
             return await _transactionHistoryService.GetTransactionsToAddress(address, take, afterHash);
         }
         
         [HttpDelete("api/transactions/history/from/{address}/observation")]
         public async Task<IActionResult> UnsubscribeFromAddressHistory(string address)
         {
+            _addressValidator.AssertValid(address);
+
             try
             {
                 await _transactionHistoryService.UnsubscribeAddressFromHistory(address);
@@ -73,6 +85,8 @@ namespace Lykke.Service.Decred.Api.Controllers
         [HttpDelete("api/transactions/history/to/{address}/observation")]
         public async Task<IActionResult> UnsubscribeToAddressHistory(string address)
         {
+            _addressValidator.AssertValid(address);
+
             try
             {
                 await _transactionHistoryService.UnsubscribeAddressToHistory(address);

@@ -13,15 +13,18 @@ namespace Lykke.Service.Decred.Api.Services
     public class TransactionHistoryService
     {
         private readonly ITransactionRepository _txRepo;
+        private readonly IAddressValidationService _addressValidator;
         private readonly INosqlRepo<BroadcastedTransactionByHash> _broadcastTxHashRepo;
         private readonly INosqlRepo<ObservableAddressEntity> _operationRepo;
 
         public TransactionHistoryService(
             ITransactionRepository txRepo,
+            IAddressValidationService addressValidator,
             INosqlRepo<BroadcastedTransactionByHash> broadcastTxHashRepo,
             INosqlRepo<ObservableAddressEntity> operationRepo)
         {
             _txRepo = txRepo;
+            _addressValidator = addressValidator;
             _broadcastTxHashRepo = broadcastTxHashRepo;
             _operationRepo = operationRepo;
         }
@@ -34,6 +37,7 @@ namespace Lykke.Service.Decred.Api.Services
         /// <returns></returns>
         public async Task SubscribeAddressFrom(string address)
         {
+            _addressValidator.AssertValid(address);
             var entity = new ObservableAddressEntity(address, TxDirection.Outgoing);
             await _operationRepo.InsertAsync(entity);
         }
@@ -46,6 +50,7 @@ namespace Lykke.Service.Decred.Api.Services
         /// <returns></returns>
         public async Task SubscribeAddressTo(string address)
         {
+            _addressValidator.AssertValid(address);
             var entity = new ObservableAddressEntity(address, TxDirection.Incoming);
             await _operationRepo.InsertAsync(entity);
         }
@@ -59,6 +64,7 @@ namespace Lykke.Service.Decred.Api.Services
         /// <returns></returns>
         public async Task UnsubscribeAddressFromHistory(string address)
         {
+            _addressValidator.AssertValid(address);
             var entity = new ObservableAddressEntity(address, TxDirection.Outgoing);
             await _operationRepo.DeleteAsync(entity);
         }
@@ -70,6 +76,7 @@ namespace Lykke.Service.Decred.Api.Services
         /// <returns></returns>
         public async Task UnsubscribeAddressToHistory(string address)
         {
+            _addressValidator.AssertValid(address);
             var entity = new ObservableAddressEntity(address, TxDirection.Incoming);
             await _operationRepo.DeleteAsync(entity);
         }
@@ -85,12 +92,14 @@ namespace Lykke.Service.Decred.Api.Services
         /// <returns></returns>
         public async Task<HistoricalTransactionContract[]> GetTransactionsFromAddress(string address, int take, string afterHash)
         {
+            _addressValidator.AssertValid(address);
             var transactions = await _txRepo.GetTransactionsFromAddress(address, take, afterHash);
             return await GetHistoricalTransactionContracts(transactions);
         }
 
         public async Task<HistoricalTransactionContract[]> GetTransactionsToAddress(string address, int take, string afterHash = null)
         {
+            _addressValidator.AssertValid(address);
             var transactions = await _txRepo.GetTransactionsToAddress(address, take, afterHash);
             return await GetHistoricalTransactionContracts(transactions);
         }

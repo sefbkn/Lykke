@@ -13,15 +13,18 @@ namespace Lykke.Service.Decred.Api.Controllers
     public class TransactionController : Controller
     {
         private readonly ILog _log;
+        private readonly IAddressValidationService _addressValidationService;
         private readonly IUnsignedTransactionService _txBuilderService;
         private readonly ITransactionBroadcastService _txBroadcastService;
 
         public TransactionController(
             ILog log,
+            IAddressValidationService addressValidationService,
             IUnsignedTransactionService txBuilderService,
             ITransactionBroadcastService txBroadcastService)
         {
             _log = log;
+            _addressValidationService = addressValidationService;
             _txBuilderService = txBuilderService;
             _txBroadcastService = txBroadcastService;
         }
@@ -47,6 +50,9 @@ namespace Lykke.Service.Decred.Api.Controllers
         
         private async Task<IActionResult> BuildTxInternal(BuildSingleTransactionRequest request, decimal feeFactor)
         {
+            _addressValidationService.AssertValid(request?.FromAddress);
+            _addressValidationService.AssertValid(request?.ToAddress);
+
             try
             {
                 var response = await _txBuilderService.BuildSingleTransactionAsync(request, feeFactor);

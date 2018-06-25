@@ -14,11 +14,15 @@ namespace Lykke.Service.Decred.Api.Controllers
     {
         private readonly ILog _log;
         private readonly BalanceService _service;
+        private readonly IAddressValidationService _addressValidator;
 
-        public BalanceController(ILog log, BalanceService service)
+        public BalanceController(ILog log, 
+            BalanceService service, 
+            IAddressValidationService addressValidator)
         {
             _log = log;
             _service = service;
+            _addressValidator = addressValidator;
         }
         
         /// <summary>
@@ -29,6 +33,8 @@ namespace Lykke.Service.Decred.Api.Controllers
         [HttpPost("api/balances/{address}/observation")]
         public async Task<IActionResult> Subscribe(string address)
         {
+            _addressValidator.AssertValid(address);
+            
             try
             {
                 await _service.SubscribeAsync(address);
@@ -49,6 +55,8 @@ namespace Lykke.Service.Decred.Api.Controllers
         [HttpDelete("api/balances/{address}/observation")]
         public async Task<IActionResult> Unsubscribe(string address)
         {
+            _addressValidator.AssertValid(address);
+
             try
             {
                 await _service.UnsubscribeAsync(address);
@@ -70,13 +78,6 @@ namespace Lykke.Service.Decred.Api.Controllers
         public async Task<PaginationResponse<WalletBalanceContract>> GetBalances([FromQuery]int take, [FromQuery] string continuation)
         {
             return await _service.GetBalancesAsync(take, continuation);
-        }
-        
-        private async Task<JsonResult> GenericErrorResponse(Exception ex, Guid operationId, HttpStatusCode status)
-        {
-            Response.StatusCode = (int) status;
-            await _log.WriteErrorAsync(nameof(TransactionController), nameof(GenericErrorResponse), operationId.ToString(), ex);
-            return Json(new { errorMessage = ex.ToString() });
         }
     }
 }
