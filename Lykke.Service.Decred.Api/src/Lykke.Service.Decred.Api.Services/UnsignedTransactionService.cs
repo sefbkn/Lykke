@@ -17,16 +17,13 @@ namespace Lykke.Service.Decred.Api.Services
     public class UnsignedTransactionService : IUnsignedTransactionService
     {
         private readonly ITransactionBuilder _builder;
-        private readonly IAddressValidationService _addressValidator;
         private readonly INosqlRepo<UnsignedTransactionEntity> _unsignedTxRepo;
 
         public UnsignedTransactionService(
             ITransactionBuilder builder,
-            IAddressValidationService addressValidator,
             INosqlRepo<UnsignedTransactionEntity> unsignedTxRepo)
         {
             _builder = builder;
-            _addressValidator = addressValidator;
             _unsignedTxRepo = unsignedTxRepo;
         }
 
@@ -36,12 +33,6 @@ namespace Lykke.Service.Decred.Api.Services
             if (request.OperationId == Guid.Empty)
                 throw new BusinessException(ErrorReason.BadRequest, "Operation id is invalid");
             
-            if(!_addressValidator.IsValid(request.FromAddress))
-                throw new BusinessException(ErrorReason.BadRequest, "From address invalid");
-
-            if(!_addressValidator.IsValid(request.ToAddress))
-                throw new BusinessException(ErrorReason.BadRequest, "To address invalid");
-
             var unsignedTx = await _unsignedTxRepo.GetAsync(request.OperationId.ToString());
             if (unsignedTx?.ResponseJson != null)
                 return JsonConvert.DeserializeObject<BuildTransactionResponse>(unsignedTx.ResponseJson);
