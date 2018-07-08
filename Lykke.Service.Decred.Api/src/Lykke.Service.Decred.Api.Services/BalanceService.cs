@@ -73,6 +73,7 @@ namespace Lykke.Service.Decred.Api.Services
             
             var balances = 
                (from balance in await _addressRepository.GetAddressBalancesAsync(addresses, blockHeight)
+                where balance.Balance > 0
                 select new WalletBalanceContract
                 {
                     AssetId = "DCR",
