@@ -4,12 +4,12 @@
     <Version>1.0.1</Version>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Lykke.AzureStorage" Version="7.0.2" />
-  </ItemGroup>
-  <ItemGroup>
     <ProjectReference Include="..\Lykke.Service.Decred.Api.Common\Lykke.Service.Decred.Api.Common.csproj">
       <Project>{12ACAF18-56AA-44A6-8D65-1C13C7AE1DB1}</Project>
       <Name>Lykke.Service.Decred.Api.Common</Name>
     </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="Lykke.AzureStorage" Version="8.8.0" />
   </ItemGroup>
 </Project>

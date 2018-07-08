@@ -4,6 +4,6 @@
     <Version>1.0.1</Version>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="Lykke.AzureStorage" Version="7.0.2" />
+    <PackageReference Include="Lykke.AzureStorage" Version="8.8.0" />
   </ItemGroup>
 </Project>
