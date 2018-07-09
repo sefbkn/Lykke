@@ -42,9 +42,7 @@ namespace Decred.BlockExplorer
                 where block_height <= @blockHeight or block_height is null
                 group by user_address";
             
-            var results = (await _dbConnection.QueryAsync<AddressBalance>(query, 
-                new { blockHeight = blockHeight, addresses = addresses }));
-
+            var results = await _dbConnection.QueryAsync<AddressBalance>(query, new { blockHeight, addresses });
             return results.ToArray();
         }
     }
