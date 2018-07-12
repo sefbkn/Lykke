@@ -87,7 +87,7 @@ namespace Lykke.Service.Decred.Api
             });
             
             services.AddSingleton(p => _log);
-            services.AddTransient(p => reloadableSettings);
+            services.AddTransient<IReloadingManager<AppSettings>>(p => reloadableSettings);
             services.AddTransient<HttpClient>();
             services.AddTransient<TransactionHistoryService>();
             services.AddTransient<IHealthService, HealthService>();
