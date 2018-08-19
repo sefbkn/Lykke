@@ -5,6 +5,8 @@
     <RootNamespace>Lykke.Service.Decred.Api.Services</RootNamespace>
     <Version>1.0.1</Version>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <ProjectReference Include="..\..\..\lib\DcrdClient\DcrdClient.csproj">
       <Project>{C83511EB-E5CC-41A5-8683-AF14D0223ADA}</Project>

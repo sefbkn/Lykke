@@ -5,6 +5,8 @@
     <RootNamespace>Decred.Common</RootNamespace>
     <Version>1.0.1</Version>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'" />
   <ItemGroup>
     <ProjectReference Include="..\Paymetheus.Decred\Paymetheus.Decred.csproj" />
   </ItemGroup>
