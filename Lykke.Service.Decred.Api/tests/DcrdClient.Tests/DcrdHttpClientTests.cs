@@ -53,7 +53,7 @@ namespace DcrdClient.Tests
                 count: 2,
                 vinExtra: 3,
                 reverse: false);
-            
+
             _messageHandler.VerifyNoOutstandingExpectation();
         }
 

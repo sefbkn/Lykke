@@ -23,6 +23,18 @@ namespace DcrdClient
             _minConfirmations = minConfirmations;
         }
 
+        private static DcrdRpcResponse<T> ParseResponse<T>(string responseBody)
+        {
+            try
+            {
+                return JsonConvert.DeserializeObject<DcrdRpcResponse<T>>(responseBody);
+            }
+            catch (Exception)
+            {
+                throw new DcrdException($"Failed to deserialize dcrd response: {responseBody}");
+            }
+        }
+
         public async Task<DcrdRpcResponse<T>> PerformAsync<T>(string method, params object[] parameters)
         {
             using (var httpClient = new HttpClient(_httpMessageHandler, false))
@@ -40,9 +52,17 @@ namespace DcrdClient
                 var responseString = await response.Content.ReadAsStringAsync();
 
                 if (response.StatusCode == HttpStatusCode.Unauthorized)
-                    throw new UnauthorizedAccessException(responseString);
+                    throw new DcrdException(responseString);
 
-                return JsonConvert.DeserializeObject<DcrdRpcResponse<T>>(responseString);
+                var deserializedResponse = ParseResponse<T>(responseString);
+
+                if (deserializedResponse == null)
+                    throw new DcrdException($"Failed to deserialize dcrd response: {responseString}");
+
+                if (deserializedResponse.Error != null)
+                    throw new DcrdException(deserializedResponse.Error.Message);
+
+                return deserializedResponse;
             }
         }
 

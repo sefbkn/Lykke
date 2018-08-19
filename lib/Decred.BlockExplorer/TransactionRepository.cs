@@ -152,18 +152,24 @@ namespace Decred.BlockExplorer
             return results;
         }
 
+        private async Task<SearchRawTransactionsResult[]> GetMempoolUtxosInternal(string address)
+        {
+            var empty = new SearchRawTransactionsResult[0];
+
+            try
+            {
+                var results = await _dcrdClient.SearchRawTransactions(address, count: 100, reverse: true);
+                return results.Result ?? empty;
+            }
+            catch (DcrdException)
+            {
+                return empty;
+            }
+        }
+
         public async Task<UnspentTxOutput[]> GetMempoolUtxos(string address)
         {
-            var result =  await _dcrdClient.SearchRawTransactions(address,
-                count: 100,
-                reverse: true);
-
-            // If the address is not in the mempool,
-            // the result property will be null.
-            if(result == null)
-                return new UnspentTxOutput[0];
-
-            var transactions = result.Result;
+            var transactions =  await GetMempoolUtxosInternal(address);
 
             // Check if an outpoint is the input to another known transaction.
             bool IsSpent(string txId, TxVout txOut) =>
