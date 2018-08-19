@@ -69,15 +69,12 @@ namespace DcrdClient.Tests
                     StatusCode = (HttpStatusCode) 200
                 });
 
-            var result = await _subject.PerformAsync<SearchRawTransactionsResult[]>("test");
-            _messageHandler.VerifyNoOutstandingExpectation();
+            var exception = await Assert.ThrowsAsync<DcrdException>(async () =>
+                await _subject.PerformAsync<SearchRawTransactionsResult[]>("test")
+            );
 
-            Assert.NotNull(result);
-            Assert.Null(result.Result);
-            Assert.Equal(-32603, result.Error.Code);
-            Assert.Equal("No Txns available", result.Error.Message);
-            Assert.Equal("0", result.Id);
-            Assert.Equal("1.0", result.Jsonrpc);
+            _messageHandler.VerifyNoOutstandingExpectation();
+            Assert.Equal("No Txns available", exception.Message);
         }
 
         private static string BuildRequestBody(string method, params object[] parameters)
