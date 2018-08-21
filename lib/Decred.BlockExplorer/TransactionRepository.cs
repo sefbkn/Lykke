@@ -92,7 +92,9 @@ namespace Decred.BlockExplorer
                 join addresses to_addr on to_addr.tx_hash = from_addr.matching_tx_hash
                 join transactions tx on tx.tx_hash = to_addr.tx_hash
                 where from_addr.is_funding = true
+                  and from_addr.valid_mainchain = true
                   and to_addr.is_funding = true
+                  and to_addr.valid_mainchain = true
                   and {filterByTable}.address = @address
                   and tx.id > @minTxId
                 order by to_addr.id asc
@@ -141,6 +143,7 @@ namespace Decred.BlockExplorer
                 join transactions tx on tx.tx_hash = vouts.tx_hash
                 where
                   addr.is_funding = true
+                  and addr.valid_mainchain = true
                   and addr.address = @address
                   and addr.matching_tx_hash = ''
                   and vouts.script_type = 'pubkeyhash'";
