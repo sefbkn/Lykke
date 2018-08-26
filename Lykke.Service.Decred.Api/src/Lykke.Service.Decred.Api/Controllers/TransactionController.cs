@@ -117,7 +117,7 @@ namespace Lykke.Service.Decred.Api.Controllers
             }
             catch (BusinessException e) when (e.Reason == ErrorReason.RecordNotFound)
             {
-                return NotFound();
+                return NoContent();
             }
 
             catch (Exception e)
