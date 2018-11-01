@@ -35,6 +35,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Decred.Common", "..\lib\NDe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DcrdClient", "..\lib\DcrdClient\DcrdClient.csproj", "{C83511EB-E5CC-41A5-8683-AF14D0223ADA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DcrdClient.Tests", "tests\DcrdClient.Tests\DcrdClient.Tests.csproj", "{7F694654-8533-4D9E-A5B2-72DD431CA920}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -77,6 +79,8 @@ Global
 		{C83511EB-E5CC-41A5-8683-AF14D0223ADA}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C83511EB-E5CC-41A5-8683-AF14D0223ADA}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C83511EB-E5CC-41A5-8683-AF14D0223ADA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7F694654-8533-4D9E-A5B2-72DD431CA920}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7F694654-8533-4D9E-A5B2-72DD431CA920}.Debug|Any CPU.Build.0 = Debug|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -90,5 +94,6 @@ Global
 		{621E3109-186B-417C-9002-2E1DF0ED124A} = {BF745453-B940-470E-81BC-43FB67703D4E}
 		{671A26F8-42D9-41C2-BE54-415EAF5BA70D} = {CC2067D7-1971-47BB-B491-5649EA3C18B2}
 		{C83511EB-E5CC-41A5-8683-AF14D0223ADA} = {CC2067D7-1971-47BB-B491-5649EA3C18B2}
+		{7F694654-8533-4D9E-A5B2-72DD431CA920} = {8F9036B1-5106-4C69-B2D2-B78EE52687A0}
 	EndGlobalSection
 EndGlobal

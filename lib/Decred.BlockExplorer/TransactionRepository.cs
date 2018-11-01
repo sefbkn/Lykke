@@ -92,7 +92,9 @@ namespace Decred.BlockExplorer
                 join addresses to_addr on to_addr.tx_hash = from_addr.matching_tx_hash
                 join transactions tx on tx.tx_hash = to_addr.tx_hash
                 where from_addr.is_funding = true
+                  and from_addr.valid_mainchain = true
                   and to_addr.is_funding = true
+                  and to_addr.valid_mainchain = true
                   and {filterByTable}.address = @address
                   and tx.id > @minTxId
                 order by to_addr.id asc
@@ -141,6 +143,7 @@ namespace Decred.BlockExplorer
                 join transactions tx on tx.tx_hash = vouts.tx_hash
                 where
                   addr.is_funding = true
+                  and addr.valid_mainchain = true
                   and addr.address = @address
                   and addr.matching_tx_hash = ''
                   and vouts.script_type = 'pubkeyhash'";
@@ -152,11 +155,24 @@ namespace Decred.BlockExplorer
             return results;
         }
 
+        private async Task<SearchRawTransactionsResult[]> GetMempoolUtxosInternal(string address)
+        {
+            var empty = new SearchRawTransactionsResult[0];
+
+            try
+            {
+                var results = await _dcrdClient.SearchRawTransactions(address, count: 100, reverse: true);
+                return results.Result ?? empty;
+            }
+            catch (DcrdException)
+            {
+                return empty;
+            }
+        }
+
         public async Task<UnspentTxOutput[]> GetMempoolUtxos(string address)
         {
-            var transactions =  await _dcrdClient.SearchRawTransactions(address,
-                count: 100,
-                reverse: true);
+            var transactions =  await GetMempoolUtxosInternal(address);
 
             // Check if an outpoint is the input to another known transaction.
             bool IsSpent(string txId, TxVout txOut) =>
